@@ -1,3 +1,4 @@
 {
-    "python.pythonPath": "c:\\Users\\akito\\Desktop\\HassyLab\\programs\\ippg_shibata_inherit\\myenv\\Scripts\\python.exe"
+    "python.pythonPath": "c:\\Users\\akito\\Desktop\\HassyLab\\programs\\ippg_shibata_inherit\\myenv\\Scripts\\python.exe",
+    "git.ignoreLimitWarning": true
 }
