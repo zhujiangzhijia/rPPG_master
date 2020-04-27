@@ -1,4 +1,7 @@
 {
-    "python.pythonPath": "c:\\Users\\akito\\Desktop\\HassyLab\\programs\\ippg_shibata_inherit\\myenv\\Scripts\\python.exe",
-    "git.ignoreLimitWarning": true
+    "python.pythonPath": "C:\\Users\\akito\\AppData\\Local\\Programs\\Python\\Python36\\python.exe",
+    "git.ignoreLimitWarning": true,
+    "python.linting.pylintArgs": [
+        "–extension-pkg-whitelist=cv2"
+    ]
 }

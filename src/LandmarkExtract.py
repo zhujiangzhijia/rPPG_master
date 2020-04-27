@@ -63,12 +63,20 @@ def ScanFaceSize(df,initframe=450):
 
 def SelectRoI(df,cap):
     # 顔スキャンし初期化
-    wide_face,wide_nose,hight_eye,hight_cheek,hight_Eyebrows,hignht_nose = ScanFaceSize(df)
-    i = 0 
-    ret = True
+    wide_face, wide_nose, hight_eye, hight_cheek, hight_Eyebrows, hignht_nose = ScanFaceSize(df)
+    i = 0
     pix_x_frames = df.iloc[:,:69].values.astype(np.int)
     pix_y_frames = np.floor(df.iloc[:,-69:].values).astype(np.int)
     
+    width = int(cap.get(cv2.CAP_PROP_FRAME_WIDTH))
+    height = int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT))
+    fps = cap.get(cv2.CAP_PROP_FPS)
+
+    # VideoWriter を作成する。
+    fourcc = cv2.VideoWriter_fourcc(*"DIVX")
+    writer = cv2.VideoWriter("20200426_test.avi", fourcc, fps, (width, height))
+
+
     allRGBArrays = None
     for i in range(int(cap.get(cv2.CAP_PROP_FRAME_COUNT))):
         print("Frame:{}".format(i))
@@ -108,7 +116,7 @@ def SelectRoI(df,cap):
         
         # RoI領域の描画
         cv2.rectangle(frame, (pix_x[31], pix_y[29] + hight_cheek), (pix_x[31] - wide_face, pix_y[29]), color=(0,0,255),thickness= 4)
-
+        cv2.rectangle(frame, (pix_x[29] + wide_nose, pix_y[29]), (pix_x[29] - wide_nose, pix_y[28]), color=(0,0,255),thickness= 4)
         for roi in roi_list:
             rgb_component = GetRGBFromRoI(roi)
             rgb_item = np.concatenate([rgb_item,rgb_component],axis=1)
@@ -119,10 +127,11 @@ def SelectRoI(df,cap):
             allRGBArrays = rgb_item
         else:
             allRGBArrays = np.concatenate([allRGBArrays,rgb_item],axis=0)
-        cv2.imshow("Frame", frame)
-        cv2.waitKey(1) 
+        
+        writer.write(frame)  # フレームを書き込む。
 
 
+    writer.release()
     cap.release()
     cv2.destroyAllWindows()
     return allRGBArrays
