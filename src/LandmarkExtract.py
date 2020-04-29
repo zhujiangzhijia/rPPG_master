@@ -50,8 +50,8 @@ def GetRGBFromRoI(roi):
     return rgb_component
 
 # 顔のサイズを初期化する
-def ScanFaceSize(df,initframe=450):
-    a = 0.90
+def ScanFaceSize(df,initframe=200):
+    a = 0.7
     wide_face      = int((df.x_29[initframe]-df.x_2[initframe])*a)
     wide_nose      = int((df.x_29[initframe]-df.x_39[initframe])*a)
     hight_eye      = int((df.y_29[initframe]-df.y_40[initframe])*a)
@@ -65,16 +65,17 @@ def SelectRoI(df,cap):
     # 顔スキャンし初期化
     wide_face, wide_nose, hight_eye, hight_cheek, hight_Eyebrows, hignht_nose = ScanFaceSize(df)
     i = 0
-    pix_x_frames = df.iloc[:,:69].values.astype(np.int)
-    pix_y_frames = np.floor(df.iloc[:,-69:].values).astype(np.int)
-    
+    pix_x_frames = df.loc[:, df.columns.str.contains('x_')].values.astype(np.int)
+    pix_y_frames = df.loc[:, df.columns.str.contains('y_')].values.astype(np.int)
+    print(pix_x_frames.shape)
+    print(pix_y_frames.shape)
     width = int(cap.get(cv2.CAP_PROP_FRAME_WIDTH))
     height = int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT))
     fps = cap.get(cv2.CAP_PROP_FPS)
 
     # VideoWriter を作成する。
     fourcc = cv2.VideoWriter_fourcc(*"DIVX")
-    writer = cv2.VideoWriter("20200426_test.avi", fourcc, fps, (width, height))
+    #writer = cv2.VideoWriter("20200426_test.avi", fourcc, fps, (width, height))
 
 
     allRGBArrays = None
@@ -115,12 +116,26 @@ def SelectRoI(df,cap):
         roi_list.append(frame[pix_y[29]:pix_y[30],  pix_x[29]- wide_face:pix_x[29] + wide_face])#11.全体スモール
         
         # RoI領域の描画
-        cv2.rectangle(frame, (pix_x[31], pix_y[29] + hight_cheek), (pix_x[31] - wide_face, pix_y[29]), color=(0,0,255),thickness= 4)
-        cv2.rectangle(frame, (pix_x[29] + wide_nose, pix_y[29]), (pix_x[29] - wide_nose, pix_y[28]), color=(0,0,255),thickness= 4)
+        plot_roi(frame,pix_y[29],pix_y[29] + hight_cheek, pix_x[31] - wide_face,pix_x[31])#1.右頬
+        plot_roi(frame,pix_y[29],pix_y[29] + hight_cheek,  pix_x[35],pix_x[35] + wide_face )#2.左頬
+        plot_roi(frame,pix_y[27],pix_y[30],   pix_x[29] - wide_nose,pix_x[29] + wide_nose)#3.鼻全体
+        plot_roi(frame,pix_y[27],pix_y[28],  pix_x[29] - wide_nose,pix_x[29] + wide_nose)#4.鼻上
+        plot_roi(frame,pix_y[28],pix_y[29],  pix_x[29] - wide_nose,pix_x[29] + wide_nose)#5.鼻真ん中
+        plot_roi(frame,pix_y[29],pix_y[30],   pix_x[29] - wide_nose,pix_x[29] + wide_nose)#6.鼻下
+        plot_roi(frame,np.clip(pix_y[29] - hight_eye, 0, None),pix_y[29] + hight_cheek, pix_x[31] - wide_face,pix_x[31])#7.右頬ワイド
+        plot_roi(frame,np.clip(pix_y[29] - hight_eye, 0, None),pix_y[29] + hight_cheek, pix_x[35],pix_x[35] + wide_face)#8.左頬ワイド
+        plot_roi(frame,pix_y[29],pix_y[31],  pix_x[29] - wide_face,pix_x[29] + wide_face)#9.全体
+        plot_roi(frame,np.clip(pix_y[29] - hight_eye, 0, None),pix_y[31], pix_x[29] - wide_face,pix_x[29] + wide_face)#10.全体ワイド
+        plot_roi(frame,pix_y[29],pix_y[30],  pix_x[29]- wide_face,pix_x[29] + wide_face)#11.全体スモール
+
+
+
+        # cv2.rectangle(frame, (pix_x[31], pix_y[29] + hight_cheek), (pix_x[31] - wide_face, pix_y[29]), color=(0,0,255),thickness= 4)
+        # cv2.rectangle(frame, (pix_x[29] + wide_nose, pix_y[29]), (pix_x[29] - wide_nose, pix_y[28]), color=(0,0,255),thickness= 4)
         for roi in roi_list:
             rgb_component = GetRGBFromRoI(roi)
-            rgb_item = np.concatenate([rgb_item,rgb_component],axis=1)
-        
+            rgb_item = np.concatenate([rgb_item, rgb_component], axis=1)
+        cv2.imshow('frame',frame)
 
         # マージ処理
         if allRGBArrays is None:
@@ -128,14 +143,17 @@ def SelectRoI(df,cap):
         else:
             allRGBArrays = np.concatenate([allRGBArrays,rgb_item],axis=0)
         
-        writer.write(frame)  # フレームを書き込む。
+        #writer.write(frame)  # フレームを書き込む。
+        
+        cv2.waitKey(25)
 
-
-    writer.release()
+    #writer.release()
     cap.release()
     cv2.destroyAllWindows()
     return allRGBArrays
 
+def plot_roi(frame,hight_top,hight_bottom,width_left,width_right):
+    cv2.rectangle(frame, (width_right, hight_bottom), (width_left, hight_top), color=(0,0,255),thickness= 4)
 
 def ExportRGBComponents(df,cap,fpath):
     rgb_components = SelectRoI(df,cap)

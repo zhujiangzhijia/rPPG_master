@@ -1,7 +1,7 @@
 {
     "python.pythonPath": "C:\\Users\\akito\\AppData\\Local\\Programs\\Python\\Python36\\python.exe",
     "git.ignoreLimitWarning": true,
-    "python.linting.pylintArgs": [
-        "–extension-pkg-whitelist=cv2"
-    ]
+    // "python.linting.pylintArgs": [
+    //     "–extension-pkg-whitelist=cv2"
+    // ]
 }

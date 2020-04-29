@@ -1,0 +1,44 @@
+@startuml
+
+(*) --> "Record Video"
+partition RoI_Segmentation {
+--> "Detection/Tracking using Openface"
+--> "RoI Segmentation"
+--> "Skin area detection"
+--> "Average RGB components in RoI"
+}
+--> "raw RGB signals"
+
+' partition Preprocessing {
+'  --> "Band pass filter  0.7-2.5Hz"
+' }
+
+
+' メモ
+'  Every interval an optimized pulse-signal is calculated and 
+'  multiplied with a Hanning window. 
+'  Half the interval length later this is repeated and
+'   the pulse output signal (bottom) results 
+'   as the sum of these overlapping pieces.
+
+partition rPPG_Detection {
+--> "Devide the signals in time-windows"
+--> "Temporal Normalize"
+--> "Project to chrominance"
+--> "Band pass filter  0.7-2.5Hz[40,240bpm]"
+--> "Compute rPPG signal(alpha-tuning)"
+--> "Hann windowed filter and add"
+--> "slide 50% window ...loop"
+}
+--> "rPPG signals"
+
+partition Peak_Detection {
+--> "frequency filter"
+--> "time domain smothing"
+--> "ppg peak detection"
+--> "outlier removal and interpolation"
+}
+--> "PPI signals"
+
+--> (*)
+@enduml

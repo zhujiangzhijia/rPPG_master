@@ -1,4 +1,0 @@
-@startuml test.png
-Bob -> Michael :message
-Bob <- Michael
-@enduml
