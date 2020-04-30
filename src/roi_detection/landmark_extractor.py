@@ -5,8 +5,7 @@ RoI領域の抽出
 import numpy as np
 import pandas as pd
 import cv2
-from skintone_detector import *
-
+from . import skintone_detector as sd
 
 def MultipleRoI(df,cap):
     """
@@ -134,8 +133,8 @@ def FaceAreaRoI(df, cap):
         roi_mask = cv2.fillConvexPoly(white_img, points = landmarks[:17,:], color=(255, 255, 255))
         
         # skin area detection HSV & YCbCr
-        skin_maskYUV = SkinDetectYCbCr(frame)
-        skin_maskHSV = SkinDetectHSV(frame)
+        skin_maskYUV = sd.SkinDetectYCbCr(frame)
+        skin_maskHSV = sd.SkinDetectHSV(frame)
 
         # average bgr components
         mask = cv2.bitwise_and(roi_mask, skin_maskYUV, skin_maskHSV)

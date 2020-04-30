@@ -4,41 +4,36 @@
 # -*- coding: utf-8 -*-
 import numpy as np
 import pandas as pd
-from src.roi_detection.landmark_extractor import *
-import cv2
-
-from src.pulse_extraction.rPPG_CHROM import ChromMethod
-from src.pulse_extraction.rPPG_GREEN import GreenMethod
-from src.pulse_extraction.rPPG_POS import POSMethod
-from src.tools import visualize
 import matplotlib.pyplot as plt
+import cv2
+from src.roi_detection.landmark_extractor import *
+from src.pulse_extraction import *
+from src.tools import visualize
 
 
-# vpath = r"C:\Users\akito\source\WebcamRecorder\output\UmcompressedVideo_3.avi"
-# landmark_data = r"C:\Users\akito\source\WebcamRecorder\output\UmcompressedVideo_3.csv"
+vpath = r"C:\Users\akito\Desktop\HassyLab\programs\rPPG_master\video\2020-04-30_motion_yaw.avi"
+landmark_data = r"C:\Users\akito\Desktop\HassyLab\programs\rPPG_master\video\2020-04-30_motion_yaw.csv"
+outpath = "./result/rgb_2020-04-30_motion_taking.csv"
 
 # #動画の読み込み
-# cap = cv2.VideoCapture(vpath)
+cap = cv2.VideoCapture(vpath)
 
-# #Openfaceで取得したLandMark
-# df = pd.read_csv(landmark_data,header = 0).rename(columns=lambda x: x.replace(' ', ''))
-# print(cap.get(cv2.CAP_PROP_FRAME_COUNT))
-# print(df.shape)
+#Openfaceで取得したLandMark
+df = pd.read_csv(landmark_data,header = 0).rename(columns=lambda x: x.replace(' ', ''))
+print(cap.get(cv2.CAP_PROP_FRAME_COUNT))
+print(df.shape)
 
+data = FaceAreaRoI(df,cap)
+np.savetxt(outpath ,data,delimiter=",")
 
-# # RGB成分をROIから取り出す
-# fpath = r"./result/rppg_result_umcomp_3.csv"
-# ExportRGBComponents(df,cap,fpath)
+rgb_components = np.loadtxt(outpath, delimiter=",")
+fig, axes = plt.subplots(3,1,sharex=True)
 
-
-
-rgb_component = np.read_csv("./result/rgb_ucomp2_faceroi.csv", delimiter=",")
-# rppg1 = POSMethod(rgb_components)
-# rppg2 = ChromMethod(rgb_components)
-rppg = GreenMethod(rgb_components)
-#plt.plot(rppg1,label="POS")
-plt.plot(rppg,label="GREEN")
-
-#plt.plot(rppg3,label="GREEN")
+axes[0].plot(GreenMethod(rgb_components))
+axes[0].set_title("Green method")
+axes[1].plot(ChromMethod(rgb_components))
+axes[1].set_title("Chrom method")
+axes[2].plot(POSMethod(rgb_components))
+axes[2].set_title("POS method")
 plt.legend()
 plt.show()
