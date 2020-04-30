@@ -1,10 +1,21 @@
-from src.LandmarkExtract import *
-import cv2
+"""
+実行ファイル
+"""
+# -*- coding: utf-8 -*-
+import numpy as np
 import pandas as pd
+from src.roi_detection.landmark_extractor import *
+import cv2
+
+from src.pulse_extraction.rPPG_CHROM import ChromMethod
+from src.pulse_extraction.rPPG_GREEN import GreenMethod
+from src.pulse_extraction.rPPG_POS import POSMethod
+from src.tools import visualize
+import matplotlib.pyplot as plt
 
 
-# vpath = r"C:\Users\akito\source\WebcamRecorder\output\UmcompressedVideo_2.avi"
-# landmark_data = r"C:\Users\akito\source\WebcamRecorder\output\UmcompressedVideo_2.csv"
+# vpath = r"C:\Users\akito\source\WebcamRecorder\output\UmcompressedVideo_3.avi"
+# landmark_data = r"C:\Users\akito\source\WebcamRecorder\output\UmcompressedVideo_3.csv"
 
 # #動画の読み込み
 # cap = cv2.VideoCapture(vpath)
@@ -16,25 +27,18 @@ import pandas as pd
 
 
 # # RGB成分をROIから取り出す
-# fpath = r"./result/rppg_result_umcomp_2.csv"
+# fpath = r"./result/rppg_result_umcomp_3.csv"
 # ExportRGBComponents(df,cap,fpath)
 
 
-from src.pulse_extraction.rPPG_CHROM import ChromMethod
-from src.pulse_extraction.rPPG_GREEN import GreenMethod
-from src.tools import visualize
-import matplotlib.pyplot as plt
-bgr_component = pd.read_csv("./result/rppg_result_umcomp_2.csv",
-                            usecols=range(4), header=0,index_col=0).values
-rgb_components = bgr_component[:, ::-1]
-green_rppg = GreenMethod(rgb_components)
-chrom_rppg = ChromMethod(rgb_components)
 
-# visualize.plot_snr(green_rppg[100:], fs=30)
-# visualize.plot_snr(chrom_rppg[100:], fs=30)
+rgb_component = np.read_csv("./result/rgb_ucomp2_faceroi.csv", delimiter=",")
+# rppg1 = POSMethod(rgb_components)
+# rppg2 = ChromMethod(rgb_components)
+rppg = GreenMethod(rgb_components)
+#plt.plot(rppg1,label="POS")
+plt.plot(rppg,label="GREEN")
 
-_,axes = plt.subplots(2,1,sharex=True)
-axes[0].plot(green_rppg)
-#axes[0].set_ylim(-1.5,1.5)
-axes[1].plot(chrom_rppg)
+#plt.plot(rppg3,label="GREEN")
+plt.legend()
 plt.show()

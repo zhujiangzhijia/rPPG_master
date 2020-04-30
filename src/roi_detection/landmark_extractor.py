@@ -1,67 +1,17 @@
+"""
+RoI領域の抽出
+"""
 # -*- coding: utf-8 -*-
 import numpy as np
 import pandas as pd
 import cv2
+from skintone_detector import *
 
-# ActionUnit制定
-def ActionUnit():
-    #表情の枠を作成
-    surprize_array = np.array([])
-    fear_array = np.array([])
-    disgust_array = np.array([])
-    anger_array = np.array([])
-    happiness_array = np.array([])
-    sadness_array = np.array([])
-    AU_1 =float(df.AU01_r[i])
-    AU_2 =float(df.AU02_r[i])
-    AU_4 =float(df.AU04_r[i])
-    AU_5 =float(df.AU05_r[i])
-    AU_6 =float(df.AU06_r[i])
-    AU_7 =float(df.AU07_r[i])
-    AU_9 =float(df.AU09_r[i])
-    AU_10 =float(df.AU10_r[i])
-    AU_12 =float(df.AU12_r[i])
-    AU_14 =float(df.AU14_r[i])
-    AU_15 =float(df.AU15_r[i])
-    AU_17 =float(df.AU17_r[i])
-    AU_20 =float(df.AU20_r[i])
-    AU_23 =float(df.AU23_r[i])
-    AU_25 =float(df.AU25_r[i])
-    AU_26 =float(df.AU26_r[i])
-    
-    #アクションユニットから各表情のスコアを算出
-    surprize = float((AU_1*40 + AU_2*30 + AU_5*60 + AU_15*20
-                     + AU_20*10 + AU_26*60)/(40+30+60+20+10+60))
-    fear = float((AU_1*50 + AU_2*10 + AU_4*80 + AU_5*60
-                     + AU_15*30 + AU_20*10 + AU_26*30)/(50+10+80+60+30+10+30))
-    disgust = float((AU_2*60 + AU_4*40 + AU_9*20
-                      + AU_15*60 + AU_17*30)/(60+40+20+60+30))
-    anger = float((AU_2*30 + AU_4*60 + AU_7*50 + AU_9*20
-                     + AU_10*10 + AU_20*15 + AU_26*30)/(30+60+50+20+10+15+30))
-    happiness = float((AU_1*65 + AU_6*70 + AU_12*10 + AU_14*10)/(65+70+10+10))
 
-    sadness = float((AU_1*40 + AU_4*50 + AU_15*40 + AU_23*20)/(40+50+40+20))
-
-    pass
-
-def GetRGBFromRoI(roi):
-    B_value, G_value, R_value = roi.T
-    rgb_component = np.array([[np.mean(B_value), np.mean(G_value),np.mean(R_value)]])
-    return rgb_component
-
-# 顔のサイズを初期化する
-def ScanFaceSize(df,initframe=200):
-    a = 0.7
-    wide_face      = int((df.x_29[initframe]-df.x_2[initframe])*a)
-    wide_nose      = int((df.x_29[initframe]-df.x_39[initframe])*a)
-    hight_eye      = int((df.y_29[initframe]-df.y_40[initframe])*a)
-    hight_cheek    = int((df.y_33[initframe]-df.y_29[initframe])*a)
-    hight_Eyebrows = int((df.y_29[initframe]-df.y_27[initframe])*a)
-    hignht_nose    = int((df.y_30[initframe]-df.y_29[initframe])*a)
-
-    return wide_face,wide_nose,hight_eye,hight_cheek,hight_Eyebrows,hignht_nose
-
-def SelectRoI(df,cap):
+def MultipleRoI(df,cap):
+    """
+    RoI領域を複数選択後，平均化されたRGBを返す
+    """
     # 顔スキャンし初期化
     wide_face, wide_nose, hight_eye, hight_cheek, hight_Eyebrows, hignht_nose = ScanFaceSize(df)
     i = 0
@@ -128,12 +78,8 @@ def SelectRoI(df,cap):
         plot_roi(frame,np.clip(pix_y[29] - hight_eye, 0, None),pix_y[31], pix_x[29] - wide_face,pix_x[29] + wide_face)#10.全体ワイド
         plot_roi(frame,pix_y[29],pix_y[30],  pix_x[29]- wide_face,pix_x[29] + wide_face)#11.全体スモール
 
-
-
-        # cv2.rectangle(frame, (pix_x[31], pix_y[29] + hight_cheek), (pix_x[31] - wide_face, pix_y[29]), color=(0,0,255),thickness= 4)
-        # cv2.rectangle(frame, (pix_x[29] + wide_nose, pix_y[29]), (pix_x[29] - wide_nose, pix_y[28]), color=(0,0,255),thickness= 4)
         for roi in roi_list:
-            rgb_component = GetRGBFromRoI(roi)
+            rgb_component = AveragedRGB(roi)
             rgb_item = np.concatenate([rgb_item, rgb_component], axis=1)
         cv2.imshow('frame',frame)
 
@@ -152,11 +98,79 @@ def SelectRoI(df,cap):
     cv2.destroyAllWindows()
     return allRGBArrays
 
+def ScanFaceSize(df,initframe=200):
+    """
+    顔のサイズを初期化する
+    """
+    a = 0.7
+    wide_face      = int((df.x_29[initframe]-df.x_2[initframe])*a)
+    wide_nose      = int((df.x_29[initframe]-df.x_39[initframe])*a)
+    hight_eye      = int((df.y_29[initframe]-df.y_40[initframe])*a)
+    hight_cheek    = int((df.y_33[initframe]-df.y_29[initframe])*a)
+    hight_Eyebrows = int((df.y_29[initframe]-df.y_27[initframe])*a)
+    hignht_nose    = int((df.y_30[initframe]-df.y_29[initframe])*a)
+
+    return wide_face,wide_nose,hight_eye,hight_cheek,hight_Eyebrows,hignht_nose
+
+
+def FaceAreaRoI(df, cap):
+    """
+    openfaceのlandmarkを使って，顔領域を選択し平均化されたRGBを返す
+    """
+    # Import landmark 
+    pix_x_frames = df.loc[:, df.columns.str.contains('x_')].values.astype(np.int)
+    pix_y_frames = df.loc[:, df.columns.str.contains('y_')].values.astype(np.int)
+
+    # loop from first to last frame
+    for i in range(int(cap.get(cv2.CAP_PROP_FRAME_COUNT))):
+        print("Frame: {}/{}".format(i,cap.get(cv2.CAP_PROP_FRAME_COUNT)))
+        ret, frame = cap.read()
+        pix_x = pix_x_frames[i,:].reshape(-1, 1)
+        pix_y = pix_y_frames[i,:].reshape(-1, 1)
+        
+        # roi segmentation
+        landmarks = np.concatenate([pix_x, pix_y],axis=1)
+        white_img = np.zeros((int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT)),int(cap.get(cv2.CAP_PROP_FRAME_WIDTH))),np.uint8)
+        roi_mask = cv2.fillConvexPoly(white_img, points = landmarks[:17,:], color=(255, 255, 255))
+        
+        # skin area detection HSV & YCbCr
+        skin_maskYUV = SkinDetectYCbCr(frame)
+        skin_maskHSV = SkinDetectHSV(frame)
+
+        # average bgr components
+        mask = cv2.bitwise_and(roi_mask, skin_maskYUV, skin_maskHSV)
+        mask_img = cv2.bitwise_and(frame, frame, mask=mask)
+        ave_rgb = np.array(cv2.mean(frame, mask=mask)[::-1][1:]).reshape(1,-1)
+
+        if i == 0:
+            rgb_components = ave_rgb
+        else:   
+            rgb_components = np.concatenate([rgb_components, ave_rgb], axis=0)
+        
+        cv2.imshow("frame", mask_img)
+        if cv2.waitKey(1) & 0xFF == ord('q'):
+            break
+
+    cap.release()
+    cv2.destroyAllWindows()
+    return rgb_components
+
+
+
 def plot_roi(frame,hight_top,hight_bottom,width_left,width_right):
     cv2.rectangle(frame, (width_right, hight_bottom), (width_left, hight_top), color=(0,0,255),thickness= 4)
 
+
+def AveragedRGB(roi):
+    """
+    RoI領域のRGB信号を平均化して返す
+    """
+    B_value, G_value, R_value = roi.T
+    bgr_component = np.array([[np.mean(B_value), np.mean(G_value),np.mean(R_value)]])
+    return bgr_component
+
 def ExportRGBComponents(df,cap,fpath):
-    rgb_components = SelectRoI(df,cap)
+    rgb_components = MultipleRoI(df,cap)
     columnslist = []
     for i in range(11):
         columnslist.append("camera{}_B".format(i+1))
@@ -167,3 +181,20 @@ def ExportRGBComponents(df,cap,fpath):
     print("########################\n")
     print("ExportData:\n{}".format(fpath))
     print("########################\n")
+
+
+
+if __name__ == "__main__":
+    vpath = r"C:\Users\akito\source\WebcamRecorder\UmcompressedVideo_3.avi"
+    landmark_data = r"C:\Users\akito\source\WebcamRecorder\output\UmcompressedVideo_3.csv"
+
+    #動画の読み込み
+    cap = cv2.VideoCapture(vpath)
+
+    #Openfaceで取得したLandMark
+    df = pd.read_csv(landmark_data,header = 0).rename(columns=lambda x: x.replace(' ', ''))
+    print(cap.get(cv2.CAP_PROP_FRAME_COUNT))
+    print(df.shape)
+
+    data = FaceAreaRoI(df,cap)
+    np.savetxt("./result/rgb_ucomp2_faceroi.csv",data,delimiter=",")

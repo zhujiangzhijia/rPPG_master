@@ -28,6 +28,12 @@ def ButterBandpass(lowcut, highcut, fs, order=3):
     sos = signal.butter(order, [low, high], analog=False, btype='band', output='sos')
     return sos
 
+def FGTransform(rgb_components):
+    """
+    Transform from: 
+    Wang, W., den Brinker, A. C., Stuijk, S., & de Haan, G. 
+    """
+    pass
 
 
 if __name__ == "__main__":

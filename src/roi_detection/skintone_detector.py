@@ -1,6 +1,37 @@
+"""
+肌色検出
+"""
+# -*- coding: utf-8 -*-
 import cv2
 import numpy as np
-import matplotlib.pyplot as plt
+
+
+def SkinDetectHSV(img):
+    """
+    RGB to HSV
+    """
+    HSV_MIN = np.array([0, 30, 60])
+    HSV_MAX = np.array([20, 150, 255])
+    # convert BGR to HSV
+    img_hsv = cv2.cvtColor(img, cv2.COLOR_BGR2HSV)
+    #mask hsv region
+    mask_hsv = cv2.inRange(img_hsv, HSV_MIN, HSV_MAX)
+    return mask_hsv
+
+
+def SkinDetectYCbCr(img):
+    """
+    RGB to YCbCr
+    """
+    YCbCr_MIN = np.array([130, 133, 77])
+    YCbCr_MAX = np.array([255, 173, 127])
+    # convert BGR to yCbCr    
+    img_ycbcr = cv2.cvtColor(img, cv2.COLOR_BGR2YCrCb)
+    #mask ycbcr region
+    mask_ycbcr = cv2.inRange(img_ycbcr, YCbCr_MIN, YCbCr_MAX)
+    return mask_ycbcr
+
+
 
 if __name__ == "__main__":
     #define parameter

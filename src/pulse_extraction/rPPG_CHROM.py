@@ -62,5 +62,5 @@ def ChromMethod(rgb_components, WinSec=1.60, LPF=0.7, HPF=2.5, fs=30):
         WinS = int(WinM)
         WinM = int(WinS + WinL/2)
         WinE = int(WinS + WinL)
-    
+
     return S
