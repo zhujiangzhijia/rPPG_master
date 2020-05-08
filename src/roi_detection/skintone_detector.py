@@ -23,7 +23,7 @@ def SkinDetectYCbCr(img):
     """
     RGB to YCbCr
     """
-    YCbCr_MIN = np.array([130, 133, 77])
+    YCbCr_MIN = np.array([150, 133, 77])
     YCbCr_MAX = np.array([255, 173, 127])
     # convert BGR to yCbCr    
     img_ycbcr = cv2.cvtColor(img, cv2.COLOR_BGR2YCrCb)

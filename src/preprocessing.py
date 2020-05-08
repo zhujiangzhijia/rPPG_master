@@ -18,7 +18,7 @@ def ButterFilter(data, lowcut, highcut, fs, order=3):
     """
     detrend = data - np.mean(data)
     sos = ButterBandpass(lowcut, highcut, fs, order=order)
-    y = signal.sosfilt(sos, data)
+    y = signal.sosfilt(sos, detrend)
     return y
 
 def ButterBandpass(lowcut, highcut, fs, order=3):
@@ -35,6 +35,21 @@ def FGTransform(rgb_components):
     """
     pass
 
+def FIRFilter(data,lowcut, highcut, fs, numtaps=10):
+    fir = signal.firwin(numtaps, [lowcut, highcut], pass_zero=False, fs=fs)
+    filtered = signal.lfilter(fir, 1, data)
+    filtered = signal.filtfilt(fir, 1, filtered)
+    return filtered
+
+def MovingAve(data, num=10):
+    """
+    移動平均
+    """
+    detrend_data = data-np.mean(data)
+    weight=np.ones(num)/num
+    convolve_data = np.convolve(detrend_data, weight, mode='same')
+
+    return detrend_data-convolve_data
 
 if __name__ == "__main__":
     import matplotlib.pyplot as plt

@@ -58,6 +58,7 @@ def ChromMethod(rgb_components, WinSec=1.60, LPF=0.7, HPF=2.5, fs=30):
         else:
             S[WinS:WinM] = S[WinS:WinM] + SWin[:int(WinL/2)] #1st half overlap
             S = np.append(S, SWin[int(WinL/2):])
+        
 
         WinS = int(WinM)
         WinM = int(WinS + WinL/2)

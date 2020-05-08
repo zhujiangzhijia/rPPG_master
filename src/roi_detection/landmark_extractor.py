@@ -130,7 +130,12 @@ def FaceAreaRoI(df, cap):
         # roi segmentation
         landmarks = np.concatenate([pix_x, pix_y],axis=1)
         white_img = np.zeros((int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT)),int(cap.get(cv2.CAP_PROP_FRAME_WIDTH))),np.uint8)
-        roi_mask = cv2.fillConvexPoly(white_img, points = landmarks[:17,:], color=(255, 255, 255))
+        # face
+        face_mask = cv2.fillConvexPoly(white_img, points = landmarks[:27,:], color=(255, 255, 255))
+        # mouse
+        white_img = np.zeros((int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT)),int(cap.get(cv2.CAP_PROP_FRAME_WIDTH))),np.uint8)
+        mouse_mask = cv2.fillConvexPoly(white_img, points = landmarks[48:60,:], color=(255, 255, 255))
+        roi_mask = cv2.bitwise_xor(face_mask,mouse_mask)
         
         # skin area detection HSV & YCbCr
         skin_maskYUV = sd.SkinDetectYCbCr(frame)
@@ -153,7 +158,6 @@ def FaceAreaRoI(df, cap):
     cap.release()
     cv2.destroyAllWindows()
     return rgb_components
-
 
 
 def plot_roi(frame,hight_top,hight_bottom,width_left,width_right):

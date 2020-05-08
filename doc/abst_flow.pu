@@ -1,0 +1,13 @@
+@startuml
+
+(*) --> "Record a Video"
+
+--> "Landmark extraction of face using Openface"
+--> "RoI Segmentation"
+--> "Skin area detection"
+--> "Average RGB components in RoI"
+--> "PPG Detection"
+
+--> (*)
+@enduml
+@enduml

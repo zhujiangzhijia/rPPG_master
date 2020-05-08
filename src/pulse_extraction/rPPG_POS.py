@@ -42,7 +42,8 @@ def POSMethod(rgb_components, WinSec=1.60, LPF=0.7, HPF=2.5, fs=30):
         # overlap-adding
         H[t:t+l] = H[t:t+l] + (np.ravel(P)-np.mean(P))/np.std(P)
 
-    filtered_sig = preprocessing.ButterFilter(H, LPF, HPF, fs)
+    filtered_sig = preprocessing.ButterFilter(H, LPF, HPF, fs,order=6)
+    #filtered_sig = H
     return filtered_sig
 
 

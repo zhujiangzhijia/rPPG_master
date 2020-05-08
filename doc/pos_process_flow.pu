@@ -10,7 +10,7 @@ partition RoI_Segmentation {
 --> "raw RGB signals"
 
 partition Preprocessing {
- --> "Band pass filter  0.7-2.5Hz"
+ --> "未実装 Band pass filter  0.7-2.5Hz"
 }
 
 partition rPPG_Detection {
@@ -22,10 +22,18 @@ partition rPPG_Detection {
 --> "slide 1 frame ...loop"
 }
 --> "rPPG signals"
-
+' //https://www.ncbi.nlm.nih.gov/pmc/articles/PMC5175543/
+' // https://www.renesas.com/jp/ja/doc/products/mpumcu/apn/rl78/003/r11an0389jj0100-bsspf-apl.pdf
 partition Peak_Detection {
---> "frequency filter"
---> "time domain smothing"
+--> "Interpolate & UpSampling"
+--> "Low Pass Filter"
+--> "High Pass Filter"
+--> "Derivative Filter"
+--> "Slope Sum Function"
+--> "Moving Average Filter"
+--> "Ca"
+--> "time domain smoothing"
+--> "frequency domain filter"
 --> "ppg peak detection"
 --> "outlier removal and interpolation"
 }
