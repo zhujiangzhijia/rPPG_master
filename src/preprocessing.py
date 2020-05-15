@@ -41,15 +41,20 @@ def FIRFilter(data,lowcut, highcut, fs, numtaps=10):
     filtered = signal.filtfilt(fir, 1, filtered)
     return filtered
 
-def MovingAve(data, num=10):
+def MovingAve(data, num=10,detrend=True):
     """
     移動平均
     """
-    detrend_data = data-np.mean(data)
-    weight=np.ones(num)/num
-    convolve_data = np.convolve(detrend_data, weight, mode='same')
+    if detrend:
+        data = data-np.mean(data)
+    weight = np.ones(num)/num
+    convolve_data = np.convolve(data, weight, mode='same')
+    return data-convolve_data
 
-    return detrend_data-convolve_data
+def RRInterval(rpeaks):
+    rri = rpeaks[1:]-rpeaks[:-1]
+    return rri
+
 
 if __name__ == "__main__":
     import matplotlib.pyplot as plt

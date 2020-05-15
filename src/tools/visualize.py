@@ -4,6 +4,7 @@
 # coding: utf-8
 import numpy as np
 from scipy import signal
+from .. import preprocessing 
 import matplotlib.pyplot as plt
 import matplotlib as mpl
 import seaborn as sns
@@ -55,4 +56,24 @@ def plot_spectrograms(ppg, fs=30, nfft=256,title=None):
     plt.ylabel('Frequency [BPM]')
     plt.xlabel('Time [sec]')
     plt.ylim(0, 250)
+    plt.show()
+
+def plot_BlandAltman(rppg_peak, ref_peak):
+    """
+    Plot Bland Altman
+    """
+    est = 1000*(rppg_peak[1:] -rppg_peak[:-1])
+    ref = 1000*(ref_peak[1:] - ref_peak[:-1])
+    x = 0.5*(est + ref)
+    y = (est - ref)
+    mae = np.mean(abs(y))
+    rmse = np.sqrt(np.mean(y**2))
+    sygma = np.std(y)
+    plt.figure()
+    plt.scatter(x, y)
+    plt.axhline(sygma*1.96)
+    plt.axhline(-sygma*1.96)
+    plt.xlabel("(Estimate+Reference)/2 [ms]")
+    plt.ylabel("Estimate-Reference [ms]")
+    plt.title("Bland Altman Plot\nMAE={:.2f}, RMSE={:.2f}".format(mae, rmse))
     plt.show()

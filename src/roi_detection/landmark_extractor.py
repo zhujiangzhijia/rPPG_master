@@ -131,12 +131,19 @@ def FaceAreaRoI(df, cap):
         landmarks = np.concatenate([pix_x, pix_y],axis=1)
         white_img = np.zeros((int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT)),int(cap.get(cv2.CAP_PROP_FRAME_WIDTH))),np.uint8)
         # face
-        face_mask = cv2.fillConvexPoly(white_img, points = landmarks[:27,:], color=(255, 255, 255))
+        points = np.concatenate([landmarks[:17,:],landmarks[17:27,:][::-1,:]],axis=0)
+        face_mask = cv2.fillConvexPoly(white_img, points = points, color=(255, 255, 255))
         # mouse
         white_img = np.zeros((int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT)),int(cap.get(cv2.CAP_PROP_FRAME_WIDTH))),np.uint8)
         mouse_mask = cv2.fillConvexPoly(white_img, points = landmarks[48:60,:], color=(255, 255, 255))
-        roi_mask = cv2.bitwise_xor(face_mask,mouse_mask)
+        # eye
+        white_img = np.zeros((int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT)),int(cap.get(cv2.CAP_PROP_FRAME_WIDTH))),np.uint8)
+        eye_right_mask = cv2.fillConvexPoly(white_img, points = landmarks[36:42,:], color=(255, 255, 255))
+        eye_left_mask = cv2.fillConvexPoly(white_img, points = landmarks[42:48,:], color=(255, 255, 255))
         
+        roi_mask = cv2.bitwise_xor(face_mask,mouse_mask)
+        # roi_mask = cv2.bitwise_xor(roi_mask,eye_right_mask)
+        # roi_mask = cv2.bitwise_xor(roi_mask,eye_left_mask)
         # skin area detection HSV & YCbCr
         skin_maskYUV = sd.SkinDetectYCbCr(frame)
         skin_maskHSV = sd.SkinDetectHSV(frame)

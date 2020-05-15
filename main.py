@@ -11,11 +11,14 @@ from src.pulse_extraction import *
 from src.tools import visualize
 from src.tools.evaluate import *
 from src.tools.opensignal import *
+from src.tools.peak_detector import *
+from src import preprocessing
+import time
+vpath = r"./video/2020-05-11_motion_rotation.avi"
+landmark_data = r"./video/2020-05-11_motion_rotation.csv"
+outpath = "./result/rgb_2020-05-11_motion_rotation.csv"
+refpath = "./video/2020-05-11_motion_rotation_ppg.csv"
 
-
-vpath = r"video/2020-05_06_motion_rotation.avi"
-landmark_data = r"video/2020-05_06_motion_rotation.csv"
-outpath = "./result/rgb_2020-05-06_motion_rotation.csv"
 
 # #動画の読み込み
 # cap = cv2.VideoCapture(vpath)
@@ -23,41 +26,58 @@ outpath = "./result/rgb_2020-05-06_motion_rotation.csv"
 # df = pd.read_csv(landmark_data, header = 0).rename(columns=lambda x: x.replace(' ', ''))
 # print(cap.get(cv2.CAP_PROP_FRAME_COUNT))
 # print(df.shape)
-# ppg_signal= FaceAreaRoI(df,cap)
-# np.savetxt(outpath ,ppg_signal,delimiter=",")
+# ppg_signal = FaceAreaRoI(df,cap)
+# np.savetxt(outpath, ppg_signal, delimiter=",")
+
+
+ref_ppg = (np.loadtxt(refpath,delimiter=",")[:, 1] / 1023) * 5
+ppg_signal = np.loadtxt(outpath,delimiter=",")
+filter_pos = POSMethod(ppg_signal,WinSec=1.6,filter=False)
+ts = np.loadtxt(refpath,delimiter=",")[:, 0]
+rppg_peaks = RppgPeakDetection(filter_pos, fr=250)
+ref_peaks = RppgPeakDetection(ref_ppg, fr=250)
+ref_peaks = RppgPeakCorrection(ref_peaks)
+plt.plot(ref_peaks[1:], preprocessing.RRInterval(rppg_peaks)[:ref_peaks.size-1], label="rPPG")
+plt.plot(ref_peaks[1:], preprocessing.RRInterval(ref_peaks), label="PPG")
+plt.legend()
+# np.savetxt(r"rppg.csv", rppg_peaks, delimiter=",")
+# np.savetxt(r"ppg.csv", ref_peaks, delimiter=",")
+plt.show()
 
 
 
 
-# iPPG
-ppg_signal = np.loadtxt(outpath, delimiter=",")
-rppg = GreenMethod(ppg_signal)
-plt.plot(rppg)
-
-# rppg_ts = np.loadtxt("./video/2020-05_06_motion_rotation_timestamp.csv",delimiter=",")
+# # iPPG
+# rppg_ts = np.loadtxt(r"C:\Users\akito\Desktop\HassyLab\programs\rPPG_master\video\2020-05_06_motion_yaw_timestamp.csv", delimiter=",")
 # import datetime
 # print(datetime.datetime.fromtimestamp(rppg_ts[0]))
 # rppg_ts = rppg_ts - rppg_ts[0]
+# rgb_signal = np.loadtxt(outpath, delimiter=",")
+# ppg_signal = POSMethod(rgb_signal)
+# rpeaks = RppgPeakDetection(ppg_signal,ts= rppg_ts ,fs=30, fr=100)
+# rri = preprocessing.RRInterval(rpeaks)
+# hr = 60 / rri
+
+
+# # plt.plot(rpeaks[1:]-rpeaks[1], hr, label="rppg")
+# # plt.plot(ecg_result['heart_rate_ts']-ecg_result['heart_rate_ts'][0], ecg_result['heart_rate'], label="ecg")
+# # plt.legend()
+
+
+
+
+# t_interpol, resamp_rppg = resampling(rppg_ts, POSMethod(ppg_signal), fs=30, fr=100)
 
 # # リファレンス
-# path = "./video/motionrotation_201808080163_2020-05-06_17-07-14.txt"
-# ecgdata = ECG(path)
-# ecg_ts = np.arange(0, rppg_ts[-1], 0.01)
-# ecgdata = ecgdata[:len(ecg_ts)]
+# ecgdata = ImportECG(refpath)
+# from biosppy.signals import ecg
+# ecg_result = ecg.ecg(ecgdata, sampling_rate = 100., show=False)
 
+# delay_time = rpeaks[5] - ecg_result['heart_rate_ts'][5]
+# print(delay_time)
 
-# fig,axes = plt.subplots(2, 1, sharex=True)
-# axes[0].plot(ecg_ts, ecgdata)
-# axes[1].plot(rppg_ts, rppg)
-
-
-# fig, axes = plt.subplots(3,1,sharex=True, figsize=(16,9))
-# axes[0].plot(GreenMethod(ppg_signal))
-# axes[0].set_title("Green method")
-# axes[1].plot(ChromMethod(ppg_signal))
-# axes[1].set_title("Chrom method")
-# axes[2].plot(POSMethod(ppg_signal))
-# axes[2].set_title("POS method")
-# axes[2].set_xlabel("Frame [-]")
+# fig,axes = plt.subplots(2,1,sharex=True)
+# axes[0].plot(ecg_result["ts"],ecg_result["filtered"],label="ECG")
+# axes[1].plot(t_interpol-delay_time, resamp_rppg,label="RPPG")
 # plt.legend()
-plt.show()
+# plt.show()

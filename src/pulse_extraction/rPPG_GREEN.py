@@ -11,11 +11,11 @@ from .. import preprocessing
 def GreenMethod(rgb_signals, LPF=0.7, HPF=2.5, fs=30):
     # Green Channel
     rppg = rgb_signals[:, 1]
-    # Filter, Normalize
-    filtered_rppg = preprocessing.ButterFilter(rppg, LPF, HPF, fs)
     # Moving Average
-    smooth_rppg = preprocessing.MovingAve(filtered_rppg, num=30)
-    return smooth_rppg
+    smooth_rppg = preprocessing.MovingAve(rppg, num=30)
+    # Filter, Normalize
+    filtered_rppg = preprocessing.ButterFilter(smooth_rppg, LPF, HPF, fs)
+    return filtered_rppg
 
 if __name__ == "__main__":
     print('__package__: {}, __name__: {}'.format(

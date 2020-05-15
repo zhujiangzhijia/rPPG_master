@@ -14,7 +14,7 @@ def plot_signal(path):
     plt.plot(ECGsignal[stindex:])
     plt.show()
     
-def ECG(path):
+def ImportECG(path):
     data = np.loadtxt(path)
     ECGsignal = data[:, -2]
     BTNsignal = data[:, -1]
@@ -22,5 +22,5 @@ def ECG(path):
     return ECGsignal[stindex:]
 
 if __name__ == "__main__":
-    path = "./video/motionrotation_201808080163_2020-05-06_17-07-14.txt"
+    path = "./video/static_201808080163_2020-05-06_16-50-21.txt"
     plot_signal(path)

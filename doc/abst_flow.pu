@@ -1,13 +1,17 @@
 @startuml
 
-(*) --> "Record a Video"
-
---> "Landmark extraction of face using Openface"
---> "RoI Segmentation"
---> "Skin area detection"
---> "Average RGB components in RoI"
---> "PPG Detection"
-
+(*) --> "RoI Segmentation"
+partition Preprocessing {
+--> "Color-distortion filtering"
+--> "Band pass filter"
+}
+partition PulseDetection {
+--> "POS or CHROM or Green"
+}
+partition Postprocessing {
+--> "Moving Average Filter"
+}
+--> "PeakDetection"
 --> (*)
 @enduml
 @enduml
