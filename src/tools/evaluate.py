@@ -5,6 +5,7 @@
 import numpy as np
 import matplotlib.pyplot as plt
 from scipy import signal
+
 def CalcSNR(ppg, HR_F=None, fs=30, nfft=512):
     """
     CHROM参照
@@ -26,3 +27,36 @@ def CalcSNR(ppg, HR_F=None, fs=30, nfft=512):
     AllPower = np.sum(power[FMask2])
     SNR = 10*np.log10((SPower)**2/(AllPower-SPower)**2)
     return HR_F, SNR
+
+def CalcFreqHR(ppg, fs=30, nfft=512):
+    """
+    Calculate Frequency domain heart rate
+    using DFT,
+    return HR[bpm]
+    """
+    # FFT PSD
+    f, t, Sxx = signal.spectrogram(ppg, fs, nperseg=nfft,
+                                   noverlap=nfft/2, scaling="spectrum")
+    # Calc HR
+    HR_F = np.array([[]])
+    for i in range(len(t)):
+        Sxx_t = Sxx[:, i]
+        HR_F_t = 60*f[np.argmax(Sxx_t)]
+        HR_F = np.append(HR_F, HR_F_t)
+    return t, HR_F
+    
+def CalcTimeHR(rpeaks, rri, segment=17.06, overlap=None):
+    """
+    Time domain Heart rate
+    """
+    if overlap is None:
+        overlap = segment/2 
+    starts = np.arange(0, rpeaks[-1]-overlap, overlap)
+    HR_T = np.array([[]])
+    for start in starts:
+        end = start + segment
+        item_rri = rri[(rpeaks >= start) & (rpeaks < end)]
+        ave_hr = 60/np.average(item_rri)
+        HR_T = np.append(HR_T, ave_hr)
+    ts = starts + overlap
+    return ts, HR_T 

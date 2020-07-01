@@ -9,7 +9,7 @@ import numpy as np
 import math
 from .. import preprocessing
 from . import cdf_filter
-
+import matplotlib.pyplot as plt
 
 def POSMethod(rgb_components, WinSec=1.6, LPF=0.7, HPF=2.5, fs=30,filter = True):
     """
@@ -36,6 +36,7 @@ def POSMethod(rgb_components, WinSec=1.6, LPF=0.7, HPF=2.5, fs=30,filter = True)
             Cn = C / np.average(C, axis=0)
         else:
             # temporal normalization
+            C = cdf_filter.cdf_filter(C, LPF, HPF, fs=fs, bpf=True)
             Cn = C/np.average(C, axis=0)
         # projection (orthogonal to 1)
         S = np.dot(Cn, np.array([[0,1,-1],[-2,1,1]]).T)
@@ -43,13 +44,10 @@ def POSMethod(rgb_components, WinSec=1.6, LPF=0.7, HPF=2.5, fs=30,filter = True)
         P = np.dot(S, np.array([[1, np.std(S[:,0]) / np.std(S[:,1])]]).T)
         # overlap-adding
         H[t:t+l] = H[t:t+l] + (np.ravel(P)-np.mean(P))/np.std(P)
-    # Moving Average
-    smooth_rppg = preprocessing.MovingAve(H, num=30)
-    # Filter, Normalize
-    filtered_rppg = preprocessing.ButterFilter(smooth_rppg, LPF, HPF, fs)
-    
-
-    #filtered_sig = preprocessing.ButterFilter(H, LPF, HPF, fs, order=3)
-    #filtered_sig = H
-    return filtered_rppg
+        # fig,axes = plt.subplots(1,2,figsize=(12,4))
+        # axes[0].plot(S[:,0],"y")
+        # axes[0].plot(S[:,1])
+        # axes[1].plot(np.ravel(P))
+        # plt.savefig("test2.png")
+    return H
 

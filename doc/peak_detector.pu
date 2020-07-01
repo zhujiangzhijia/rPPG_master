@@ -1,0 +1,11 @@
+@startuml
+
+(*) --> "PPG Signal"
+--> "Interpolate & UpSampling to 250Hz"
+--> "1st Derivative Filter"
+--> "Detect zero crossing points"
+--> "outlier removal and interpolation"
+
+
+--> (*)
+@enduml

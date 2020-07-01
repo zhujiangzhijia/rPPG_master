@@ -8,13 +8,13 @@ import pandas as pd
 from .. import preprocessing
 
 
-def GreenMethod(rgb_signals, LPF=0.7, HPF=2.5, fs=30):
+def GreenMethod(rgb_signals, LPF=0.7, HPF=2.5, fs=15):
     # Green Channel
     rppg = rgb_signals[:, 1]
     # Moving Average
-    smooth_rppg = preprocessing.MovingAve(rppg, num=30)
+    #smooth_rppg = preprocessing.MovingAve(rppg, num=30)
     # Filter, Normalize
-    filtered_rppg = preprocessing.ButterFilter(smooth_rppg, LPF, HPF, fs)
+    filtered_rppg = preprocessing.ButterFilter(rppg, LPF, HPF, fs)
     return filtered_rppg
 
 if __name__ == "__main__":

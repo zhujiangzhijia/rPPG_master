@@ -5,6 +5,7 @@ RGB値の前処理を担当する
 # coding: utf-8
 import numpy as np
 from scipy import signal
+from scipy import interpolate
 
 def ButterFilter(data, lowcut, highcut, fs, order=3):
     """
@@ -54,6 +55,49 @@ def MovingAve(data, num=10,detrend=True):
 def RRInterval(rpeaks):
     rri = rpeaks[1:]-rpeaks[:-1]
     return rri
+
+def mod_frame(C_rgb, ts, fs=30):
+    """
+    フレーム間の時間ずれ補正
+    """
+    C_interpol = interpolate.interp1d(ts, C_rgb, "cubic",axis=0)
+    t_interpol = np.arange(ts[0], ts[-1], 1./fs)
+    C_n = C_interpol(t_interpol)
+    return C_n
+
+
+def outlier_correction(rpeaks, rri=None, threshold=0.25):
+    """
+    RRI時系列と平均値の差分を算出し，閾値を使って外れ値を取り除く
+    Kubios
+    ------
+    threshold level
+    
+    very low : 0.45sec
+    low : 0.35sec
+    medium : 0.25sec
+    strong : 0.15sec
+    very strong : .05sec
+    """
+    if rri is None:
+        rri = np.diff(rpeaks)
+    # prakをRRiと合わせる
+    rpeaks = rpeaks[1:] - rpeaks[0]
+
+    # median filter
+    median_rri = signal.medfilt(rri, 7)
+    detrend_rri = rri - median_rri
+    # 閾値より大きく外れたデータを取得
+    index_outlier = np.where(np.abs(detrend_rri) > threshold)[0]
+    print("{} point detected".format(index_outlier.size))
+    
+    if index_outlier.size > 0:
+        # 閾値を超えれば，スプライン関数で補間
+        flag = np.ones(len(rri), dtype=bool)
+        flag[index_outlier.tolist()] = False
+        rri_spline = interpolate.interp1d(rpeaks[flag], rri[flag], 'cubic')
+        rri = rri_spline(rpeaks)
+    return rpeaks, rri
 
 
 if __name__ == "__main__":

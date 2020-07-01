@@ -9,7 +9,7 @@ from scipy.fftpack import fft, ifft,fftfreq
 import matplotlib.pyplot as plt
 
 
-def cdf_filter(C_rgb, LPF, HPF, fs):
+def cdf_filter(C_rgb, LPF, HPF, fs, bpf=False):
     """
     Color-distortion filtering for remote photoplethysmography. 
     """
@@ -17,12 +17,16 @@ def cdf_filter(C_rgb, LPF, HPF, fs):
     # temporal normalization
     Cn = C_rgb/np.average(C_rgb, axis=0) -1 
     # FFT transform
-    FF = fft(Cn,n=L,axis=0)
+    FF = fft(Cn, n=L, axis=0)
     freq = fftfreq(n=L, d=1/fs)
     # Characteristic transformation
     H = np.dot(FF, (np.array([[-1, 2, -1]])/math.sqrt(6)).T)
     # Energy measurement
-    W = (H * np.conj(H)) / np.sum(FF*np.conj(FF), 1).reshape(-1, 1)
+    if bpf == True:
+        # BPF only
+        W = 1
+    else:
+        W = (H * np.conj(H)) / np.sum(FF*np.conj(FF), 1).reshape(-1, 1)
     # band limitation
     FMask = (freq >= LPF)&(freq <= HPF)
     FMask = FMask + FMask[::-1]

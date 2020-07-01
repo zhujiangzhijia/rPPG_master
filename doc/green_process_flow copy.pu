@@ -8,9 +8,9 @@ partition RoIsegmentation {
 --> "Average RGB components in RoI"
 }
 
-' partition Preprocessing {
-'  --> "Band pass filter  0.7-2.5Hz"
-' }
+partition Preprocessing {
+ --> "Band pass filter  0.7-2.5Hz"
+}
 
 partition rPPG_GREEN {
 --> "Select Green component"

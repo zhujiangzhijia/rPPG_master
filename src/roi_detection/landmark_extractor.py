@@ -97,6 +97,7 @@ def MultipleRoI(df,cap):
     cv2.destroyAllWindows()
     return allRGBArrays
 
+
 def ScanFaceSize(df,initframe=200):
     """
     顔のサイズを初期化する
@@ -133,17 +134,15 @@ def FaceAreaRoI(df, cap):
         # face
         points = np.concatenate([landmarks[:17,:],landmarks[17:27,:][::-1,:]],axis=0)
         face_mask = cv2.fillConvexPoly(white_img, points = points, color=(255, 255, 255))
-        # mouse
+        # mouse & eye
         white_img = np.zeros((int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT)),int(cap.get(cv2.CAP_PROP_FRAME_WIDTH))),np.uint8)
-        mouse_mask = cv2.fillConvexPoly(white_img, points = landmarks[48:60,:], color=(255, 255, 255))
-        # eye
-        white_img = np.zeros((int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT)),int(cap.get(cv2.CAP_PROP_FRAME_WIDTH))),np.uint8)
-        eye_right_mask = cv2.fillConvexPoly(white_img, points = landmarks[36:42,:], color=(255, 255, 255))
-        eye_left_mask = cv2.fillConvexPoly(white_img, points = landmarks[42:48,:], color=(255, 255, 255))
-        
-        roi_mask = cv2.bitwise_xor(face_mask,mouse_mask)
-        # roi_mask = cv2.bitwise_xor(roi_mask,eye_right_mask)
-        # roi_mask = cv2.bitwise_xor(roi_mask,eye_left_mask)
+        # mask mouse
+        cv2.fillConvexPoly(white_img, points = landmarks[48:60,:], color=(255, 255, 255))
+        # mask eye
+        cv2.fillConvexPoly(white_img, points = landmarks[36:42,:], color=(255, 255, 255))
+        outlier_mask = cv2.fillConvexPoly(white_img, points = landmarks[42:48,:], color=(255, 255, 255))
+        # merge maskq
+        roi_mask = cv2.bitwise_xor(face_mask,outlier_mask)
         # skin area detection HSV & YCbCr
         skin_maskYUV = sd.SkinDetectYCbCr(frame)
         skin_maskHSV = sd.SkinDetectHSV(frame)
@@ -155,6 +154,8 @@ def FaceAreaRoI(df, cap):
 
         if i == 0:
             rgb_components = ave_rgb
+            cv2.imwrite('mask.jpg',mask_img)
+            cv2.imwrite('frame.jpg',frame)
         else:   
             rgb_components = np.concatenate([rgb_components, ave_rgb], axis=0)
         
@@ -178,6 +179,7 @@ def AveragedRGB(roi):
     B_value, G_value, R_value = roi.T
     bgr_component = np.array([[np.mean(B_value), np.mean(G_value),np.mean(R_value)]])
     return bgr_component
+
 
 def ExportRGBComponents(df,cap,fpath):
     rgb_components = MultipleRoI(df,cap)

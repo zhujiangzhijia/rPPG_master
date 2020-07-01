@@ -10,7 +10,7 @@ original:https://github.com/danmcduff/iphys-toolbox/blob/master/CHROM_DEHAAN.m
 import numpy as np
 import math
 from .. import preprocessing
-def ChromMethod(rgb_components, WinSec=1.60, LPF=0.7, HPF=2.5, fs=30):
+def ChromMethod(rgb_components, WinSec=1.60, LPF=0.7, HPF=2.5, fs=15):
     """
     CHROM method
     WinSec :was a 32 frame window with 20 fps camera

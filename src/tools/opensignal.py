@@ -5,7 +5,6 @@ Opensignalで計測したデータを
 # coding: utf-8
 import numpy as np
 import matplotlib.pyplot as plt
-
 def plot_signal(path):
     data = np.loadtxt(path)
     ECGsignal = data[:, -2]
