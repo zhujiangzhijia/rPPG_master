@@ -66,6 +66,8 @@ def mod_frame(C_rgb, ts, fs=30):
     return C_n
 
 
+
+
 def outlier_correction(rpeaks, rri=None, threshold=0.25):
     """
     RRI時系列と平均値の差分を算出し，閾値を使って外れ値を取り除く

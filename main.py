@@ -21,16 +21,16 @@ refpath = r"./video/2020-05-29_static_imagesource_opensignals.txt"
 delay = 5.0 # sec
 length = 120 # sec
 
-# # -------------動画の読み込み--------------
-# cap = cv2.VideoCapture(vpath)
-# # # Openfaceで取得したLandMark
-# df = pd.read_csv(landmark_data, header = 0).rename(columns=lambda x: x.replace(' ', ''))
-# print(cap.get(cv2.CAP_PROP_FRAME_COUNT))
-# print(df.shape)
-# ppg_signal = FaceAreaRoI(df,cap)
-# np.savetxt(outpath, ppg_signal, delimiter=",")
-# ref_ecg = np.loadtxt(refpath)[int(delay*1000):, -1]
-# ref_peaks = signals.ecg.ecg(ref_ecg, sampling_rate=1000, show=False)[2]
+# -------------動画の読み込み--------------
+cap = cv2.VideoCapture(vpath)
+# # Openfaceで取得したLandMark
+df = pd.read_csv(landmark_data, header = 0).rename(columns=lambda x: x.replace(' ', ''))
+print(cap.get(cv2.CAP_PROP_FRAME_COUNT))
+print(df.shape)
+ppg_signal = FaceAreaRoI(df,cap)
+np.savetxt(outpath, ppg_signal, delimiter=",")
+ref_ecg = np.loadtxt(refpath)[int(delay*1000):, -1]
+ref_peaks = signals.ecg.ecg(ref_ecg, sampling_rate=1000, show=False)[2]
 
 
 
