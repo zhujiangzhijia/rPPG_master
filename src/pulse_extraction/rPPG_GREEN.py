@@ -14,8 +14,8 @@ def GreenMethod(rgb_signals, LPF=0.7, HPF=2.5, fs=15):
     # Moving Average
     #smooth_rppg = preprocessing.MovingAve(rppg, num=30)
     # Filter, Normalize
-    filtered_rppg = preprocessing.ButterFilter(rppg, LPF, HPF, fs)
-    return filtered_rppg
+    #filtered_rppg = preprocessing.ButterFilter(rppg, LPF, HPF, fs)
+    return rppg#filtered_rppg
 
 if __name__ == "__main__":
     print('__package__: {}, __name__: {}'.format(
