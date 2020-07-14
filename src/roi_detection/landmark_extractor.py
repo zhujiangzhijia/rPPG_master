@@ -2,6 +2,7 @@
 RoI領域の抽出
 """
 # -*- coding: utf-8 -*-
+import os
 import numpy as np
 import pandas as pd
 import cv2
@@ -113,40 +114,50 @@ def ScanFaceSize(df,initframe=200):
     return wide_face,wide_nose,hight_eye,hight_cheek,hight_Eyebrows,hignht_nose
 
 
-def FaceAreaRoI(df, cap):
+def FaceAreaRoI(df, dirpath):
     """
     openfaceのlandmarkを使って，顔領域を選択し平均化されたRGBを返す
     """
     # Import landmark 
     pix_x_frames = df.loc[:, df.columns.str.contains('x_')].values.astype(np.int)
     pix_y_frames = df.loc[:, df.columns.str.contains('y_')].values.astype(np.int)
+    # ファイル一覧を取得
+    files = []
+    i = 0
+    for filename in os.listdir(dirpath):
+        if os.path.isfile(os.path.join(dirpath, filename)): #ファイルのみ取得
+            files.append(filename)
 
     # loop from first to last frame
-    for i in range(int(cap.get(cv2.CAP_PROP_FRAME_COUNT))):
-        print("Frame: {}/{}".format(i,cap.get(cv2.CAP_PROP_FRAME_COUNT)))
-        ret, frame = cap.read()
+    #for i in range(int(cap.get(cv2.CAP_PROP_FRAME_COUNT))):
+    for fname in files:
+        #print("Frame: {}/{}".format(i,cap.get(cv2.CAP_PROP_FRAME_COUNT)))
+        #ret, frame = cap.read()
+        frame = cv2.imread(os.path.join(dirpath, fname))
+        height, width = frame.shape[:2]
+
         pix_x = pix_x_frames[i,:].reshape(-1, 1)
         pix_y = pix_y_frames[i,:].reshape(-1, 1)
-        
+
+
         # roi segmentation
         landmarks = np.concatenate([pix_x, pix_y],axis=1)
-        white_img = np.zeros((int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT)),int(cap.get(cv2.CAP_PROP_FRAME_WIDTH))),np.uint8)
+        white_img = np.zeros((int(height),int(width)),np.uint8)
         # face
         points = np.concatenate([landmarks[:17,:],landmarks[17:27,:][::-1,:]],axis=0)
         face_mask = cv2.fillConvexPoly(white_img, points = points, color=(255, 255, 255))
         # mouse & eye
-        white_img = np.zeros((int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT)),int(cap.get(cv2.CAP_PROP_FRAME_WIDTH))),np.uint8)
+        white_img = np.zeros((int(height),int(width)),np.uint8)
         # mask mouse
         cv2.fillConvexPoly(white_img, points = landmarks[48:60,:], color=(255, 255, 255))
         # mask eye
         cv2.fillConvexPoly(white_img, points = landmarks[36:42,:], color=(255, 255, 255))
         outlier_mask = cv2.fillConvexPoly(white_img, points = landmarks[42:48,:], color=(255, 255, 255))
-        # merge maskq
+        # merge mask
         roi_mask = cv2.bitwise_xor(face_mask,outlier_mask)
         # skin area detection HSV & YCbCr
         skin_maskYUV = sd.SkinDetectYCbCr(frame)
         skin_maskHSV = sd.SkinDetectHSV(frame)
-
         # average bgr components
         mask = cv2.bitwise_and(roi_mask, skin_maskYUV, skin_maskHSV)
         mask_img = cv2.bitwise_and(frame, frame, mask=mask)
@@ -154,16 +165,14 @@ def FaceAreaRoI(df, cap):
 
         if i == 0:
             rgb_components = ave_rgb
-            cv2.imwrite('mask.jpg',mask_img)
-            cv2.imwrite('frame.jpg',frame)
         else:   
             rgb_components = np.concatenate([rgb_components, ave_rgb], axis=0)
-        
+
         cv2.imshow("frame", mask_img)
+        i = i + 1
         if cv2.waitKey(1) & 0xFF == ord('q'):
             break
 
-    cap.release()
     cv2.destroyAllWindows()
     return rgb_components
 
@@ -172,13 +181,62 @@ def plot_roi(frame,hight_top,hight_bottom,width_left,width_right):
     cv2.rectangle(frame, (width_right, hight_bottom), (width_left, hight_top), color=(0,0,255),thickness= 4)
 
 
+def MouseRoI(dirpath):
+    """
+    openfaceのlandmarkを使って，顔領域を選択し平均化されたRGBを返す
+    """
+    # ファイル一覧を取得
+    files = []
+    i = 0
+    for filename in os.listdir(dirpath):
+        if os.path.isfile(os.path.join(dirpath, filename)): #ファイルのみ取得
+            files.append(filename)
+            
+    # マウスイベント
+    winname = 'Image'
+    image = cv2.imread(os.path.join(dirpath, files[0]))
+    rois = cv2.selectROIs(winname, image, False)# x,y,w,h
+    cv2.destroyAllWindows()
+    for r in rois:
+        print("x:{}, y:{}, w:{}, h:{}".format(r[0],r[1],r[2],r[3]))
+ 
+    
+    # loop from first to last frame
+    for fname in files:
+        frame = cv2.imread(os.path.join(dirpath, fname))
+        j = 0
+        for r in rois:
+            img_roi = frame[int(r[1]):int(r[1]+r[3]), int(r[0]):int(r[0]+r[2])]
+            if j == 0:
+                ave_rgb_roi = AveragedRGB(img_roi)
+            else:
+                ave_rgb_roi = np.concatenate([ave_rgb_roi,AveragedRGB(img_roi)], axis=1)
+            j = j+1
+    
+        if i == 0:
+            rgb_components = ave_rgb_roi
+        else:   
+            rgb_components = np.concatenate([rgb_components, ave_rgb_roi], axis=0)
+
+        # plot
+        for r in rois:
+            cv2.rectangle(frame,(r[0],r[1]),(r[2]+r[0],r[3]+r[1]), (255, 0, 0),thickness=3)
+        cv2.imshow("frame", frame)
+        i = i + 1
+        if cv2.waitKey(1) & 0xFF == ord('q'):
+            break
+
+    cv2.destroyAllWindows()
+    return rgb_components
+
+
 def AveragedRGB(roi):
     """
     RoI領域のRGB信号を平均化して返す
     """
     B_value, G_value, R_value = roi.T
-    bgr_component = np.array([[np.mean(B_value), np.mean(G_value),np.mean(R_value)]])
-    return bgr_component
+    rgb_component = np.array([[np.mean(R_value), np.mean(G_value),np.mean(B_value)]])
+    return rgb_component
 
 
 def ExportRGBComponents(df,cap,fpath):

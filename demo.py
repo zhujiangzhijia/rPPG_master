@@ -16,9 +16,6 @@ cap = cv2.VideoCapture(filepath)
 fourcc = cv2.VideoWriter_fourcc('m','p','4','v')
 video = cv2.VideoWriter('demo_2020-04-30_motion_yaw.mp4', fourcc, 30.0, (1200, 600))
 
-# 歯入ってるっぽい
-# いろいろ体裁を整える
-
 
 # rPPG設定
 rgb = np.loadtxt(rgbpath, delimiter=",")
