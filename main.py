@@ -10,30 +10,24 @@ import matplotlib.pyplot as plt
 import cv2
 from src.roi_detection.landmark_extractor import *
 from src.pulse_extraction import *
-from src.tools import visualize
+# from src.tools import visualize
 from src.tools.evaluate import *
 from src.tools.opensignal import *
 from src.tools.peak_detector import *
 from src import preprocessing
 from biosppy import signals
 
-dirpath = r"C:\Users\akito\Desktop\50fps\Cam 1"
-landmark_data = r"C:\Users\akito\Desktop\output\Cam 1_100fps.csv"
-outpath = r"C:\Users\akito\Desktop\output\rgb_signal.csv"
+dirpath = r"C:\Users\akito\Desktop\imagesource\18lux"
+landmark_data = r"C:\Users\akito\Desktop\imagesource\18lux\output\18lux.csv"
+outpath = r"C:\Users\akito\Desktop\imagesource\18lux\output\rgb_signal_18lux.csv"
 refpath = r"./video/2020-05-29_static_imagesource_opensignals.txt"
-delay = 5.0 # sec
-length = 120 # sec
 
-# -------------動画の読み込み--------------
-df = pd.read_csv(landmark_data, header = 0).rename(columns=lambda x: x.replace(' ', ''))
-rgb_signal = MouseRoI(dirpath)
-np.savetxt(outpath, rgb_signal, delimiter=",")
 
-rgb_signal = np.loadtxt(outpath, delimiter=",")
-rppg_pos = POSMethod(rgb_signal, WinSec=1.6, fs=30, filter=False)
-plt.plot(rppg_pos)
-plt.show()
-
+files = []
+i = 0
+for filename in os.listdir(dirpath):
+    if os.path.isfile(os.path.join(dirpath, filename)): #ファイルのみ取得
+        files.append(filename)
 
 # ファイル名からフレーム時刻を取得
 timestamps = []
@@ -47,8 +41,21 @@ for file in files:
 data_time = np.array(timestamps)
 data_timediff = 1/np.diff(data_time)
 print(np.mean(data_timediff))
-plt.plot(data_timediff)
+# plt.hist(data_timediff, bins=1000)
+# plt.show()
+
+
+# -------------動画の読み込み--------------
+df = pd.read_csv(landmark_data, header = 0).rename(columns=lambda x: x.replace(' ', ''))
+rgb_signal = MouseRoI(dirpath)
+np.savetxt(outpath, rgb_signal, delimiter=",")
+
+rgb_signal = np.loadtxt(outpath, delimiter=",")
+rppg_pos = POSMethod(rgb_signal, WinSec=1.6, fs=30, filter=False)
+plt.plot(rppg_pos)
 plt.show()
+
+
 
 
 cap = cv2.VideoCapture(vpath)

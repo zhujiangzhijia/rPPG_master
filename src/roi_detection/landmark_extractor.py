@@ -191,18 +191,18 @@ def MouseRoI(dirpath):
     for filename in os.listdir(dirpath):
         if os.path.isfile(os.path.join(dirpath, filename)): #ファイルのみ取得
             files.append(filename)
-            
+
     # マウスイベント
     winname = 'Image'
-    image = cv2.imread(os.path.join(dirpath, files[0]))
-    rois = cv2.selectROIs(winname, image, False)# x,y,w,h
+    image = cv2.imread(os.path.join(dirpath, files[816]))
+    rois = cv2.selectROIs(winname, image, False) # x,y,w,h
     cv2.destroyAllWindows()
     for r in rois:
         print("x:{}, y:{}, w:{}, h:{}".format(r[0],r[1],r[2],r[3]))
  
     
     # loop from first to last frame
-    for fname in files:
+    for fname in files[816:]:
         frame = cv2.imread(os.path.join(dirpath, fname))
         j = 0
         for r in rois:
