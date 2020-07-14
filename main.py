@@ -46,16 +46,24 @@ print(np.mean(data_timediff))
 
 
 # -------------動画の読み込み--------------
-df = pd.read_csv(landmark_data, header = 0).rename(columns=lambda x: x.replace(' ', ''))
-rgb_signal = MouseRoI(dirpath)
-np.savetxt(outpath, rgb_signal, delimiter=",")
+# df = pd.read_csv(landmark_data, header = 0).rename(columns=lambda x: x.replace(' ', ''))
+# rgb_signal = MouseRoI(dirpath)
+# np.savetxt(outpath, rgb_signal, delimiter=",")
+# x:271, y:177, w:51, h:63
+# x:414, y:175, w:53, h:71
+# x:348, y:67, w:38, h:42
+# x:350, y:140, w:35, h:74
+# x:322, y:310, w:71, h:37
 
 rgb_signal = np.loadtxt(outpath, delimiter=",")
-rppg_pos = POSMethod(rgb_signal, WinSec=1.6, fs=30, filter=False)
-plt.plot(rppg_pos)
+_, axes = plt.subplots(5, 1, sharex=True)
+j = 0
+for i in [0, 3, 6, 9,12]:
+    rppg_pos = GreenMethod(rgb_signal[:,i:i+3])
+    axes[j].plot(rppg_pos)
+    j = j + 1
+
 plt.show()
-
-
 
 
 cap = cv2.VideoCapture(vpath)
