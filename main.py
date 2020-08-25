@@ -20,7 +20,7 @@ from biosppy import signals
 dirpath = r"C:\Users\akito\Desktop\imagesource\18lux"
 landmark_data = r"C:\Users\akito\Desktop\imagesource\18lux\output\18lux.csv"
 outpath = r"C:\Users\akito\Desktop\imagesource\18lux\output\rgb_signal_18lux.csv"
-refpath = r"./video/2020-05-29_static_imagesource_opensignals.txt"
+refpath = r"D:\RppgDatasets\03.BiometricData\LuminanceLevel\18lux\opensignals_201808080163_2020-07-14_14-11-39_18lux.txt"
 
 
 files = []
@@ -41,8 +41,6 @@ for file in files:
 data_time = np.array(timestamps)
 data_timediff = 1/np.diff(data_time)
 print(np.mean(data_timediff))
-# plt.hist(data_timediff, bins=1000)
-# plt.show()
 
 
 # -------------動画の読み込み--------------

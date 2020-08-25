@@ -7,7 +7,7 @@ from scipy import interpolate
 from .. import preprocessing
 import matplotlib.pyplot as plt
 
-def RppgPeakDetection(ppg, fs=30, fr=100, show=False, filter=False,col=0.8):
+def RppgPeakDetection(ppg, fs=30, fr=100, show=False, filter=False, col=0.8):
     """
     rPPG peak検出
     peak時間を返り値とする

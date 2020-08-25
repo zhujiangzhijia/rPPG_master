@@ -3,3 +3,4 @@ myenv/
 result/
 video/
 *.pyc
+config.py
