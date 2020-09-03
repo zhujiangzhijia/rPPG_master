@@ -20,7 +20,7 @@ def ButterFilter(data, lowcut, highcut, fs, order=3):
     detrend = data - np.mean(data)
     sos = ButterBandpass(lowcut, highcut, fs, order=order)
     y = signal.sosfilt(sos, detrend)
-    return y
+    return -y
 
 def ButterBandpass(lowcut, highcut, fs, order=3):
     nyq = 0.5 * fs

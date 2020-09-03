@@ -8,25 +8,22 @@ import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
 import cv2
+
 from src.roi_detection.landmark_extractor import *
 from src.pulse_extraction import *
-# from src.tools import visualize
+from src.tools import visualize
 from src.tools.evaluate import *
 from src.tools.opensignal import *
 from src.tools.peak_detector import *
 from src import preprocessing
 from biosppy import signals
-
-dirpath = r"C:\Users\akito\Desktop\imagesource\18lux"
-landmark_data = r"C:\Users\akito\Desktop\imagesource\18lux\output\18lux.csv"
-outpath = r"C:\Users\akito\Desktop\imagesource\18lux\output\rgb_signal_18lux.csv"
-refpath = r"D:\RppgDatasets\03.BiometricData\LuminanceLevel\18lux\opensignals_201808080163_2020-07-14_14-11-39_18lux.txt"
-
+import config as cf
 
 files = []
+
 i = 0
-for filename in os.listdir(dirpath):
-    if os.path.isfile(os.path.join(dirpath, filename)): #ファイルのみ取得
+for filename in os.listdir(cf.DIR_PATH):
+    if os.path.isfile(os.path.join(cf.DIR_PATH, filename)): #ファイルのみ取得
         files.append(filename)
 
 # ファイル名からフレーム時刻を取得
@@ -39,34 +36,67 @@ for file in files:
     timestamps.append(timestamp[0]*60**2 + timestamp[1]*60 + timestamp[2])
 
 data_time = np.array(timestamps)
+data_time = data_time - data_time[0]
 data_timediff = 1/np.diff(data_time)
 print(np.mean(data_timediff))
 
 
 # -------------動画の読み込み--------------
-# df = pd.read_csv(landmark_data, header = 0).rename(columns=lambda x: x.replace(' ', ''))
-# rgb_signal = MouseRoI(dirpath)
-# np.savetxt(outpath, rgb_signal, delimiter=",")
-# x:271, y:177, w:51, h:63
-# x:414, y:175, w:53, h:71
-# x:348, y:67, w:38, h:42
-# x:350, y:140, w:35, h:74
-# x:322, y:310, w:71, h:37
+# df = pd.read_csv(cf.LANDMARK_PATH, header = 0).rename(columns=lambda x: x.replace(' ', ''))
+# rgb_signal = FaceAreaRoI(df,cf.DIR_PATH)
+# np.savetxt(cf.OUTPUT_PATH, rgb_signal, delimiter=",")
 
-rgb_signal = np.loadtxt(outpath, delimiter=",")
-_, axes = plt.subplots(5, 1, sharex=True)
-j = 0
-for i in [0, 3, 6, 9,12]:
-    rppg_pos = GreenMethod(rgb_signal[:,i:i+3])
-    axes[j].plot(rppg_pos)
-    j = j + 1
+# RPPG
+rgb_signal = np.loadtxt(cf.OUTPUT_PATH, delimiter=",")
+rppg_pos = POSMethod(rgb_signal, fs=100, filter=False)
+rppg_green = GreenMethod(rgb_signal)
+_,axes = plt.subplots(2,1,sharex=True)
+axes[0].plot(rppg_pos)
+axes[1].plot(rppg_green)
+plt.show()
+#
 
+
+# Cut-Time
+rppg_pos = rppg_pos[(data_time>cf.DELAY_T) & (data_time<cf.DURATION_T+cf.DELAY_T)]
+data_time = data_time[(data_time>cf.DELAY_T) & (data_time<cf.DURATION_T+cf.DELAY_T)]-cf.DELAY_T
+est_rpeaks = RppgPeakDetection(rppg_pos,data_time, show=True, filter=True,col=0.4)
+
+# Reference
+ref_ecg = np.loadtxt(cf.REF_PATH)[int(cf.DELAY_T*1000):int((cf.DURATION_T+cf.DELAY_T)*1000), -2]
+ref_peaks = signals.ecg.ecg(ref_ecg, sampling_rate=1000, show=False)[2]
+ts = np.arange(0, len(ref_ecg)*0.001, 0.001)
+plt.plot(ref_peaks[1:], ref_peaks[1:]-ref_peaks[:-1],label="REF")
+plt.plot(est_rpeaks[1:], est_rpeaks[1:]-est_rpeaks[:-1],label="EST")
+plt.legend()
 plt.show()
 
+est_rpeaks = est_rpeaks[:len(ref_peaks)]
+visualize.plot_BlandAltman(est_rpeaks*0.001,ref_peaks*0.001)
 
-cap = cv2.VideoCapture(vpath)
-# # Openfaceで取得したLandMark
-df = pd.read_csv(landmark_data, header = 0).rename(columns=lambda x: x.replace(' ', ''))
+
+result = np.concatenate((ref_peaks.reshape(-1,1),
+                         est_rpeaks.reshape(-1,1)), axis=1)
+
+# np.savetxt(r"D:\RppgDatasets\05.Analysis\LightSource\no_restraint_celling_peaks.csv",result,delimiter=",")
+
+
+# #plt.legend()
+import pyhrv
+pyhrv.frequency_domain.welch_psd(nni = est_rpeaks[1:] - est_rpeaks[:-1],show=True,detrend=False,nfft=2**9)
+pyhrv.frequency_domain.welch_psd(nni = ref_peaks[1:] - ref_peaks[:-1], show=True,detrend=False,nfft=2**9)
+visualize.plot_PSD(est_rpeaks*0.001, label="EST")
+visualize.plot_PSD(ref_peaks*0.001, label="REF")
+plt.show()
+
+#_,axes = plt.subplots(2,1,sharex=True)
+#axes[0].plot(data_time[data_time>cf.DELAY_T]-cf.DELAY_T,rppg_pos[data_time>cf.DELAY_T])
+#axes[1].plot(ts, ref_ecg)
+plt.show()
+
+# cap = cv2.VideoCapture(cf.vpath)
+# # # Openfaceで取得したLandMark
+# df = pd.read_csv(cf.landmark_data, header = 0).rename(columns=lambda x: x.replace(' ', ''))
 
 # print(cap.get(cv2.CAP_PROP_FRAME_COUNT))
 # print(df.shape)

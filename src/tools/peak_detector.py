@@ -7,7 +7,7 @@ from scipy import interpolate
 from .. import preprocessing
 import matplotlib.pyplot as plt
 
-def RppgPeakDetection(ppg, fs=30, fr=100, show=False, filter=False, col=0.8):
+def RppgPeakDetection(ppg,ts,fr=100, show=False, filter=False, col=0.7):
     """
     rPPG peak検出
     peak時間を返り値とする
@@ -15,11 +15,14 @@ def RppgPeakDetection(ppg, fs=30, fr=100, show=False, filter=False, col=0.8):
     # Moving Average
     if filter==True:
         #ppg = preprocessing.MovingAve(ppg, num=3)
-        ppg =  preprocessing.ButterFilter(ppg, 0.7, 2.5, fs)
+        ppg =  preprocessing.ButterFilter(ppg, 0.7, 2.5, fr)
+    
     # Resampling
-    t_interpol, resamp_rppg = resampling(ppg, fs, fr)
+    t_interpol, resamp_rppg = resampling(ppg, ts, fr)
+    
     # 1st Derivative
     ppg_dot = np.gradient(resamp_rppg, 1/fr)
+
     # Simple binary filter
     binary = np.copy(ppg_dot)
     binary[binary >= 0] = 1
@@ -34,8 +37,12 @@ def RppgPeakDetection(ppg, fs=30, fr=100, show=False, filter=False, col=0.8):
         offset = setlists[i+1]
         peak_index = onset + np.argmax(resamp_rppg[onset: offset])
         peak_indexes = np.append(peak_indexes, peak_index)
+
     # peak correction 
-    rpeaks = RppgPeakCorrection(t_interpol[peak_indexes.astype(np.int64)],col)
+    rpeaks = t_interpol[peak_indexes.astype(np.int64)]
+    rppg_amp = resamp_rppg[peak_indexes.astype(np.int64)]
+    rpeaks = rpeaks[(rppg_amp>np.mean(rppg_amp)*col)]
+
     if show == True:
         import matplotlib.pyplot as plt
         fig,axes = plt.subplots(2, 1, sharex=True)
@@ -46,7 +53,8 @@ def RppgPeakDetection(ppg, fs=30, fr=100, show=False, filter=False, col=0.8):
         axes[1].set_title("RRI signal")
         axes[1].plot(rpeaks[1:],rpeaks[1:]-rpeaks[:-1])
         plt.show()
-    return rpeaks
+
+    return rpeaks*1000
 
 def RppgPeakCorrection(RRIpeaks, col=0.80):
     """
@@ -61,13 +69,12 @@ def RppgPeakCorrection(RRIpeaks, col=0.80):
         i = i + 1
     return RRIpeaks
 
-def resampling(rppg, fs=30, fr=100):
+def resampling(rppg,ts, fr=100):
     """
     リサンプリング
     3次のスプライン補間
     """
-    # Resampling
-    ts = np.arange(0, len(rppg)/fs, 1./fs)[:int(len(rppg))]
+    #ts = np.arange(0, len(rppg)/fs, 1./fs)[:int(len(rppg))]
     rppg_interpol = interpolate.interp1d(ts, rppg, "cubic")
     t_interpol = np.arange(ts[0], ts[-1], 1./fr)
     resamp_rppg = rppg_interpol(t_interpol)

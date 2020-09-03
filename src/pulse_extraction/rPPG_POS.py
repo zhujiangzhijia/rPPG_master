@@ -36,7 +36,7 @@ def POSMethod(rgb_components, WinSec=1.6, LPF=0.7, HPF=2.5, fs=30,filter = True)
             Cn = C / np.average(C, axis=0)
         else:
             # temporal normalization
-            #C = cdf_filter.cdf_filter(C, LPF, HPF, fs=fs, bpf=True)
+            C = cdf_filter.cdf_filter(C, LPF, HPF, fs=fs, bpf=True)
             Cn = C/np.average(C, axis=0)
             
         # projection (orthogonal to 1)

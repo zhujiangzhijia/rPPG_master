@@ -4,6 +4,8 @@
 --> "Interpolate & UpSampling to 250Hz"
 --> "1st Derivative Filter"
 --> "Detect zero crossing points"
+--> "Moving Average"
+--> "交差点の最大値"
 --> "outlier removal and interpolation"
 
 

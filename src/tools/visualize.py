@@ -22,7 +22,7 @@ def plot_snr(ppg, hr=None, fs=30):
     FResBPM = 0.5 # パワースペクトルの解像度（bpm）
     N = (60*2*NyquistF)/FResBPM
 
-    freq, power = signal.welch(ppg, fs, nfft=512, detrend="constant",
+    freq, power = signal.welch(ppg, fs, nfft=5096, detrend="constant",
                                      scaling="spectrum", window="hamming")
     # peak hr
     HR_F = freq[np.argmax(power)]
@@ -65,12 +65,13 @@ def plot_BlandAltman(rppg_peak, ref_peak):
     """
     est = 1000*(rppg_peak[1:] -rppg_peak[:-1])
     ref = 1000*(ref_peak[1:] - ref_peak[:-1])
+    corr = np.corrcoef(est, ref)[0, 1]
     x = 0.5*(est + ref)
     y = (est - ref)
     mae = np.mean(abs(y))
     rmse = np.sqrt(np.mean(y**2))
     sygma = np.std(y)
-    print("Result index: MAE={} RMSE={}".format(mae,rmse))
+    print("Result index: MAE={} RMSE={}".format(mae, rmse))
     plt.figure(figsize=(8,6))
     plt.scatter(x, y)
     plt.axhline(sygma*1.96,label="+1.96σ")
@@ -78,7 +79,7 @@ def plot_BlandAltman(rppg_peak, ref_peak):
     plt.axhline(np.mean(y),label="mean", color='black')
     plt.xlabel("(Estimate+Reference)/2 [ms]")
     plt.ylabel("Estimate-Reference [ms]")
-    plt.title("Bland Altman Plot\nMAE={:.2f}, RMSE={:.2f}".format(mae, rmse))
+    plt.title("Bland Altman Plot\nMAE={:.2f}, RMSE={:.2f}, CORR={:.2f}".format(mae, rmse, corr))
     plt.legend()
     plt.show()
 
@@ -106,7 +107,11 @@ def plot_rri(ref_ppg,filter_rppg, nonfilter_rppg):
     plt.legend()
     plt.show()
 
-def plot_PSD(rri_peaks, rri=None, label=None,nfft=2**10):
+def plot_PSD(rri_peaks, rri=None, label=None,nfft=2**9):
+    """
+    PSDを出力
+    rri_peaks [s]
+    """
     sample_rate = 4
     if rri is None:
         rri = np.diff(rri_peaks)
@@ -122,7 +127,7 @@ def plot_PSD(rri_peaks, rri=None, label=None,nfft=2**10):
     LF = np.sum(powers[(frequencies>=0.05) & (frequencies<0.15)]) * 0.10
     HF = np.sum(powers[(frequencies>0.15) & (frequencies<=0.40)]) * 0.25
     print("Result :LF={:2f}, HF={:2f}, LF/HF={:2f}".format(LF, HF, LF/HF))
-    plt.plot(frequencies, powers/10**6,label=label)
+    plt.plot(frequencies, powers, label=label)
     plt.axvline(x=.05, color='r')
     plt.axvline(x=0.15, color='r')
     plt.axvline(x=0.40, color='r')

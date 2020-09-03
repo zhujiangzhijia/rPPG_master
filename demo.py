@@ -7,35 +7,38 @@ import matplotlib.pyplot as plt
 import seaborn as sns
 import cv2
 from src.pulse_extraction import *
-filepath = r"./video/landmark_2020-04-30_motion_yaw.avi"
-rgbpath = r"./result/rgb_2020-04-30_motion_yaw.csv"
+filepath = r"D:\RppgDatasets\04.Video\nonfixed\double\Cam 1\output\Landmark.avi"
+rgbpath = r"D:\RppgDatasets\03.BiometricData\LightSource\no_restraint_celling_and_front\rgb_no_restraint_celling_and_front.csv"
 
 sns.set()
 # video設定
 cap = cv2.VideoCapture(filepath)
 fourcc = cv2.VideoWriter_fourcc('m','p','4','v')
-video = cv2.VideoWriter('demo_2020-04-30_motion_yaw.mp4', fourcc, 30.0, (1200, 600))
-
+# fourcc = cv2.VideoWriter_fourcc(*'XVID')  #fourccを定義
+# video = cv2.VideoWriter('demo_stationary.mp4', fourcc, 100.0, (720, 540))
+video = cv2.VideoWriter('demo_stationary.mp4', fourcc, 100.0, (1200, 600))
 
 # rPPG設定
 rgb = np.loadtxt(rgbpath, delimiter=",")
-ppg_green = GreenMethod(rgb)
-ppg_pos = POSMethod(rgb)
-ts = np.linspace(0, 30, num=int(cap.get(cv2.CAP_PROP_FRAME_COUNT)))
-
-for i in range(int(cap.get(cv2.CAP_PROP_FRAME_COUNT))):
+# ppg_green = GreenMethod(rgb)
+ppg_pos = GreenMethod(rgb)
+ts = np.arange(0,int(cap.get(cv2.CAP_PROP_FRAME_COUNT)*0.01),0.01)
+for i in range(300,1800):
     print("Frame: {}".format(i))
+    cap.set(cv2.CAP_PROP_POS_FRAMES, i)
     ret, frame = cap.read()
-    frame = frame[:, 420:1501]
+    frame = frame[:, :]
     frame = cv2.resize(frame, (600, 600)) 
-    
+
     # 描画
-    fig,axis = plt.subplots(2,1,sharex=True,figsize=(6,6))
-    axis[0].plot(ts[:i+1], ppg_green[:i+1])
-    axis[0].set_title("Green Method")
-    axis[1].plot(ts[:i+1], ppg_pos[:i+1])
-    axis[1].set_title("POS Method")
-    axis[1].set_xlabel("Time[s]")
+    #fig,axis = plt.subplots(1,1,sharex=True,figsize=(6,6))
+    fig = plt.figure(figsize=(6,6))
+
+    # axis[0].plot(ts[:i+1], ppg_green[:i+1])
+    # axis[0].set_title("Green Method")
+    plt.plot(ts[300:i+1]-ts[300], ppg_pos[300:i+1])
+    plt.title("Estimation")
+    plt.xlabel("Time[s]")
     if ts[i]<=5:
         plt.xlim(0,5)
     else:
@@ -47,9 +50,9 @@ for i in range(int(cap.get(cv2.CAP_PROP_FRAME_COUNT))):
     im = cv2.cvtColor(image_array, cv2.COLOR_RGBA2BGR)
     concat_frame = cv2.hconcat([frame,im])
     video.write(concat_frame)
-    cv2.imshow("test",concat_frame)
     plt.close()
-    cv2.waitKey(25)
+    # cv2.imshow("test",concat_frame)
+    # cv2.waitKey(25)
 
 cap.release()
 video.release()
