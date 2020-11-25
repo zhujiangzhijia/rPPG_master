@@ -8,7 +8,7 @@ import pandas as pd
 from .. import preprocessing
 
 
-def GreenMethod(rgb_signals, LPF=0.7, HPF=2.5, fs=100):
+def GreenMethod(rgb_signals, LPF=0.7, HPF=2.5, fs=30):
     # Green Channel
     rppg = rgb_signals[:, 1]
     # Moving Average

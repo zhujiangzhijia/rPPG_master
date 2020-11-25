@@ -19,42 +19,51 @@ from src import preprocessing
 from biosppy import signals
 import config as cf
 
-files = []
+# files = []
 
-i = 0
-for filename in os.listdir(cf.DIR_PATH):
-    if os.path.isfile(os.path.join(cf.DIR_PATH, filename)): #ファイルのみ取得
-        files.append(filename)
+# i = 0
+# for filename in os.listdir(cf.DIR_PATH):
+#     if os.path.isfile(os.path.join(cf.DIR_PATH, filename)): #ファイルのみ取得
+#         files.append(filename)
 
-# ファイル名からフレーム時刻を取得
-timestamps = []
-for file in files:
-    file_param = re.split('[_ ]', file)
-    timestamp = re.split('[-]', file_param[1])
-    # Str to int
-    timestamp = [float(s) for s in timestamp]
-    timestamps.append(timestamp[0]*60**2 + timestamp[1]*60 + timestamp[2])
+# # ファイル名からフレーム時刻を取得
+# timestamps = []
+# for file in files:
+#     file_param = re.split('[_ ]', file)
+#     timestamp = re.split('[-]', file_param[1])
+#     # Str to int
+#     timestamp = [float(s) for s in timestamp]
+#     timestamps.append(timestamp[0]*60**2 + timestamp[1]*60 + timestamp[2])
 
-data_time = np.array(timestamps)
-data_time = data_time - data_time[0]
-data_timediff = 1/np.diff(data_time)
-print(np.mean(data_timediff))
+# data_time = np.array(timestamps)
+# data_time = data_time - data_time[0]
+# data_timediff = 1/np.diff(data_time)
+# print(np.mean(data_timediff))
 
 
 # -------------動画の読み込み--------------
 # df = pd.read_csv(cf.LANDMARK_PATH, header = 0).rename(columns=lambda x: x.replace(' ', ''))
 # rgb_signal = FaceAreaRoI(df,cf.DIR_PATH)
-# np.savetxt(cf.OUTPUT_PATH, rgb_signal, delimiter=",")
-
+cap = cv2.VideoCapture(cf.DIR_PATH)
+# rgb_signal = FaceAreaRoIVideo(df, cap)
+rgb_signal = MouseRoIVideo(cap)
+np.savetxt(cf.OUTPUT_PATH, rgb_signal, delimiter=",")
+exit()
 # RPPG
 rgb_signal = np.loadtxt(cf.OUTPUT_PATH, delimiter=",")
-rppg_pos = POSMethod(rgb_signal, fs=100, filter=False)
-rppg_green = GreenMethod(rgb_signal)
-_,axes = plt.subplots(2,1,sharex=True)
+rppg_pos = POSMethod(rgb_signal, fs=52, filter=False)
+rppg_green = GreenMethod(rgb_signal,fs=52)
+rppg_chrom = ChromMethod(rgb_signal, fs=52)
+_,axes = plt.subplots(3,1,sharex=True)
 axes[0].plot(rppg_pos)
 axes[1].plot(rppg_green)
+axes[2].plot(rppg_chrom)
+
 plt.show()
-#
+
+est_rpeaks = RppgPeakDetection(-rppg_pos,fs=30,show=True,col=0.15,filter=True)
+plt.show()
+exit()
 
 
 # Cut-Time
