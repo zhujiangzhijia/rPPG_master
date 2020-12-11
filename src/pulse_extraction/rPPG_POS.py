@@ -11,7 +11,7 @@ from .. import preprocessing
 from . import cdf_filter
 import matplotlib.pyplot as plt
 
-def POSMethod(rgb_components, WinSec=1.6, LPF=0.7, HPF=2.5, fs=30,filter = True):
+def POSMethod(rgb_components, WinSec=1.6, LPF=0.7, HPF=2.5, fs=30,filter = False):
     """
     POS method
     WinSec :was a 32 frame window with 20 fps camera
@@ -21,22 +21,22 @@ def POSMethod(rgb_components, WinSec=1.6, LPF=0.7, HPF=2.5, fs=30,filter = True)
     (iv) L = 256 (12.8 s), B = [10,50] 
     (v) L = 512 (25.6 s), B = [18,100] 
     """
-
     # 初期化
     N = rgb_components.shape[0]
     H = np.zeros(N)
     l = math.ceil(WinSec*fs)
+
 
     # loop from first to last frame
     for t in range(N-l+1):
         # spatical averagining
         C = rgb_components[t:t+l, :]
         if filter == True:
-            C = cdf_filter.cdf_filter(C, LPF, HPF, fs=fs)
+            C = cdf_filter.cdf_filter(C, LPF, HPF, fs=fs,bpf=True)
             Cn = C / np.average(C, axis=0)
         else:
             # temporal normalization
-            C = cdf_filter.cdf_filter(C, LPF, HPF, fs=fs, bpf=True)
+            #C = cdf_filter.cdf_filter(C, LPF, HPF, fs=fs,bpf=False)
             Cn = C/np.average(C, axis=0)
             
         # projection (orthogonal to 1)
@@ -45,10 +45,6 @@ def POSMethod(rgb_components, WinSec=1.6, LPF=0.7, HPF=2.5, fs=30,filter = True)
         P = np.dot(S, np.array([[1, np.std(S[:,0]) / np.std(S[:,1])]]).T)
         # overlap-adding
         H[t:t+l] = H[t:t+l] + (np.ravel(P)-np.mean(P))/np.std(P)
-        # fig,axes = plt.subplots(1,2,figsize=(12,4))
-        # axes[0].plot(S[:,0],"y")
-        # axes[0].plot(S[:,1])
-        # axes[1].plot(np.ravel(P))
-        # plt.savefig("test2.png")
+
     return H
 

@@ -1,13 +1,13 @@
 @startuml
 
 (*) --> "PPG Signal"
+partition Peak_Detection {
 --> "Interpolate & UpSampling to 250Hz"
---> "1st Derivative Filter"
---> "Detect zero crossing points"
---> "Moving Average"
---> "交差点の最大値"
+--> "Derivative Filter"
+--> "Slope Sum Function"
+--> "ppg peak detection"
 --> "outlier removal and interpolation"
-
+}
 
 --> (*)
 @enduml

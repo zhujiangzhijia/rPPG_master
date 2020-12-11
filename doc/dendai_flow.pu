@@ -1,0 +1,19 @@
+@startuml
+
+(*) --> "Record Video"
+
+partition RoI_Segmentation {
+--> "Detection/Tracking using Openface"
+--> "Face Mask by using 64 features point"
+--> "Removing the eye area by points"
+--> "Removing the mouse area by points"
+--> "HSV Skin Color detection"
+--> "Noise Reduction-erode,dilate"
+--> "GaussianBlur Filter"
+--> "Average RGB components in RoI"
+}
+--> "raw RGB signals"
+
+
+--> (*)
+@enduml

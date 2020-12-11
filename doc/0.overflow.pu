@@ -1,0 +1,10 @@
+@startuml
+
+(*) --> "Record Video"
+--> "RoI_Segmentation"
+--> "RGB component"
+--> "Interpolate FPS(sampling)"
+--> "rPPG detection"
+--> "rPPG signals"
+--> (*)
+@enduml

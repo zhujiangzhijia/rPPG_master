@@ -69,7 +69,7 @@ def RppgPeakCorrection(RRIpeaks, col=0.80):
         i = i + 1
     return RRIpeaks
 
-def resampling(rppg,ts, fr=100):
+def resampling(rppg, ts, fr=100):
     """
     リサンプリング
     3次のスプライン補間
@@ -80,6 +80,16 @@ def resampling(rppg,ts, fr=100):
     resamp_rppg = rppg_interpol(t_interpol)
     return t_interpol, resamp_rppg
 
+def linear_resampling(rppg, ts, fr=100):
+    """
+    リサンプリング
+    3次のスプライン補間
+    """
+    #ts = np.arange(0, len(rppg)/fs, 1./fs)[:int(len(rppg))]
+    rppg_interpol = interpolate.interp1d(ts, rppg, "linear")
+    t_interpol = np.arange(ts[0], ts[-1], 1./fr)
+    resamp_rppg = rppg_interpol(t_interpol)
+    return t_interpol, resamp_rppg
 
 if __name__ == "__main__":
     import matplotlib.pyplot as plt

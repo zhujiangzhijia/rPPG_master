@@ -1,0 +1,19 @@
+@startuml
+
+(*) --> "Record Video"
+--> "raw RGB signals"
+partition rPPG_Detection(POS) {
+--> "Define Window Length if filtered 1.6s"
+--> "loop from first to last frame in video sequence"
+--> "Bnad pass filter 0.7Hz(42bpm)~2.5Hz(150bpm)"
+--> "spatical averaging"
+--> "projection to skin"
+--> "Compute rPPG signal(alpha-tuning)"
+--> "overlap adding"
+--> "slide 1 frame ...loop"
+}
+--> "rPPG signals"
+' --> "Band pass filter 0.7Hz(42bpm)~2.5Hz(150bpm)"
+' --> "Filtered rPPG signals"
+--> (*)
+@enduml

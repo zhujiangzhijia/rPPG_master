@@ -3,8 +3,44 @@
 """
 # coding: utf-8
 import numpy as np
+import pandas as pd
 import matplotlib.pyplot as plt
-from scipy import signal
+from scipy import signal,interpolate
+import pyhrv
+
+# 一定時間ごとの特徴量を算出し，dataframe型にまとめて返す
+def biosignal_time_summary(rpeaks, duration=300,overlap=150,skip_time=None,outpath=None): 
+    # 時間変数を作成
+    time_ = np.arange(duration, rpeaks.max()/1000, overlap)
+    label_ = time_
+    if skip_time is not None:
+        time_ = time_ + skip_time
+    section_ = zip((time_ - duration), time_)
+    emotion = dict(zip(label_.tolist(), section_))
+
+    df = pd.DataFrame([])
+    # 各生体データを時間区間りで算出
+    for i,key in enumerate(emotion.keys()):
+        # セグメント内での特徴量算出
+        segment_bio_report = {}
+        # 心拍をセクションごとに分割する
+        seg_rpeaks  = rpeaks[(rpeaks>=emotion[key][0]*1000) & (rpeaks<=emotion[key][1]*1000)]
+        # 特徴抽出
+        # bio_parameter = Calc_PSD(seg_rpeaks)
+        features = pyhrv.frequency_domain.welch_psd(nni=seg_rpeaks[1:] - seg_rpeaks[:-1],show=False,detrend=False,nfft=2**9)
+        # Print all the parameters keys and values individually
+        bio_parameter = {"LF_ABS":features["fft_abs"][0],"HF_ABS":features["fft_abs"][1], "LFHFratio": features["fft_ratio"]}
+        
+        print("{}... done".format(key))
+        segment_bio_report.update({'section':key})
+        segment_bio_report.update(bio_parameter)
+
+        if i == 0:
+            df = pd.DataFrame([], columns=segment_bio_report.keys())
+
+        df =  pd.concat([df, pd.DataFrame(segment_bio_report , index=[key])])
+    return df
+
 
 def CalcSNR(ppg, HR_F=None, fs=30, nfft=512):
     """
@@ -60,3 +96,25 @@ def CalcTimeHR(rpeaks, rri, segment=17.06, overlap=None):
         HR_T = np.append(HR_T, ave_hr)
     ts = starts + overlap
     return ts, HR_T 
+
+def Calc_PSD(rri_peaks, rri=None, nfft=2**8):
+    """
+    PSDを出力
+    rri_peaks [s]
+    """
+    sample_rate = 4
+    if rri is None:
+        rri = np.diff(rri_peaks)
+        rri_peaks = rri_peaks[1:] - rri_peaks[1]
+
+    # 3次のスプライン補間
+    rri_spline = interpolate.interp1d(rri_peaks, rri, 'cubic')
+    t_interpol = np.arange(rri_peaks[0], rri_peaks[-1], 1./sample_rate)
+    rri_interpol = rri_spline(t_interpol)
+    frequencies, powers  = signal.welch(x=rri_interpol, fs=sample_rate, window='hamming',
+                                        detrend="constant",	nperseg=len(rri_interpol),
+                                        nfft=len(rri_interpol), scaling='density')
+    LF = np.sum(powers[(frequencies>=0.05) & (frequencies<0.15)]) * 0.10
+    HF = np.sum(powers[(frequencies>0.15) & (frequencies<=0.40)]) * 0.25
+    print("Result :LF={:2f}, HF={:2f}, LF/HF={:2f}".format(LF, HF, LF/HF))
+    return {"LF_abs":LF,"HF_abs":HF,"LFHFratio":LF/HF}
