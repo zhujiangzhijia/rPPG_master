@@ -7,7 +7,7 @@ from scipy import interpolate
 from .. import preprocessing
 import matplotlib.pyplot as plt
 
-def RppgPeakDetection(ppg,ts,fr=100, show=False, filter=False, col=0.7):
+def RppgPeakDetection(ppg,fs,fr=100, show=False, filter=False, col=0.7):
     """
     rPPG peak検出
     peak時間を返り値とする
@@ -15,10 +15,10 @@ def RppgPeakDetection(ppg,ts,fr=100, show=False, filter=False, col=0.7):
     # Moving Average
     if filter==True:
         #ppg = preprocessing.MovingAve(ppg, num=3)
-        ppg =  preprocessing.ButterFilter(ppg, 0.7, 2.5, fr)
+        ppg =  preprocessing.ButterFilter(ppg, 0.7, 2.5, fs)
     
     # Resampling
-    t_interpol, resamp_rppg = resampling(ppg, ts, fr)
+    t_interpol, resamp_rppg = resampling(ppg, fs, fr)
     
     # 1st Derivative
     ppg_dot = np.gradient(resamp_rppg, 1/fr)
@@ -74,7 +74,7 @@ def resampling(rppg, ts, fr=100):
     リサンプリング
     3次のスプライン補間
     """
-    #ts = np.arange(0, len(rppg)/fs, 1./fs)[:int(len(rppg))]
+    ts = np.arange(0, len(rppg)/fs, 1./fs)[:int(len(rppg))]
     rppg_interpol = interpolate.interp1d(ts, rppg, "cubic")
     t_interpol = np.arange(ts[0], ts[-1], 1./fr)
     resamp_rppg = rppg_interpol(t_interpol)

@@ -25,7 +25,11 @@ def plot_snr(ppg, hr=None, fs=30,text=None):
     freq, power = signal.welch(ppg, fs, nfft=5096*8, detrend="constant",
                                      scaling="spectrum", window="hamming")
     # peak hr
-    HR_F = freq[np.argmax(power)]
+    if hr is not None:
+        HR_F = hr/60
+    else:
+        HR_F = freq[np.argmax(power)]
+        print(HR_F)
     # 0.2Hz帯
     GTMask1 = (freq >= HR_F-0.1) & (freq <= HR_F+0.1)
     GTMask2 = (freq >= HR_F*2-0.2) & (freq <= HR_F*2+0.2)

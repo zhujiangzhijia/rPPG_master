@@ -346,6 +346,48 @@ def MouseRoI(dirpath):
     return rgb_components
 
 
+def MouseRoIVideo(cap):
+    """
+    openfaceのlandmarkを使って，顔領域を選択し平均化されたRGBを返す
+    """
+    # マウスイベント
+    winname = 'Image'
+    ret, image = cap.read()
+    rois = cv2.selectROIs(winname, image, False) # x,y,w,h
+    cv2.destroyAllWindows()
+    for r in rois:
+        print("x:{}, y:{}, w:{}, h:{}".format(r[0],r[1],r[2],r[3]))
+ 
+    # loop from first to last frame
+    for i in range(int(cap.get(cv2.CAP_PROP_FRAME_COUNT))-1):
+        j = 0
+        #for fname in files:
+        print("Frame: {}/{}".format(i,cap.get(cv2.CAP_PROP_FRAME_COUNT)))
+        ret, frame = cap.read()
+        for r in rois:
+            img_roi = frame[int(r[1]):int(r[1]+r[3]), int(r[0]):int(r[0]+r[2])]
+            if j == 0:
+                ave_rgb_roi = AveragedRGB(img_roi)
+            else:
+                ave_rgb_roi = np.concatenate([ave_rgb_roi,AveragedRGB(img_roi)], axis=1)
+            j = j+1
+    
+        if i == 0:
+            rgb_components = ave_rgb_roi
+        else:   
+            rgb_components = np.concatenate([rgb_components, ave_rgb_roi], axis=0)
+
+        # cv2.imshow("frame", mask_img)
+        i = i + 1
+        if cv2.waitKey(1) & 0xFF == ord('q'):
+            break
+        print(i)
+
+    cv2.destroyAllWindows()
+    return rgb_components
+
+
+
 def AveragedRGB(roi):
     """
     RoI領域のRGB信号を平均化して返す

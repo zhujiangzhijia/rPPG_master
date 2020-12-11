@@ -24,6 +24,13 @@ def SkinDetectHSV(img):
     img_hsv = cv2.cvtColor(img, cv2.COLOR_BGR2HSV)
     #mask hsv region
     mask_hsv = cv2.inRange(img_hsv, HSV_MIN, HSV_MAX)
+
+    #ノイズ除去
+    # # # 近傍の定義
+    # element8 = np.ones((3,3),np.uint8)
+    # mask_hsv = cv2.morphologyEx(mask_hsv, cv2.MORPH_CLOSE, element8)
+    # mask_hsv = cv2.morphologyEx(mask_hsv, cv2.MORPH_OPEN, element8)
+
     return mask_hsv
 
 def SkinDetectYCbCr(img):
@@ -36,6 +43,7 @@ def SkinDetectYCbCr(img):
     img_ycbcr = cv2.cvtColor(img, cv2.COLOR_BGR2YCrCb)
     #mask ycbcr region
     mask_ycbcr = cv2.inRange(img_ycbcr, YCbCr_MIN, YCbCr_MAX)
+
     return mask_ycbcr
 
 def ReduceNoise(img):
