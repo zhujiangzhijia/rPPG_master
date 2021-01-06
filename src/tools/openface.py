@@ -2,14 +2,15 @@
 import os
 import subprocess
 
-def openface(filepath, outdir):
+def openface(filepath, outdir=None,command = ""):
     # 実行フォルダを指定
     place = os.path.join(os.getcwd(),"OpenFace_2.2.0_win_x64")
-    # 実行コマンド
+    
+    # 動画か画像フォルダか判定
     if os.path.isfile(filepath):
-        value = 'FeatureExtraction.exe -f "{}" -out_dir "{}" -2Dfp -tracked'.format(filepath, outdir)
+        value = 'FeatureExtraction.exe -f "{}" -out_dir "{}" -2Dfp -tracked {}'.format(filepath, outdir,command)
     else:
-        value = 'FeatureExtraction.exe -fdir "{}" -out_dir "{}" -2Dfp -tracked'.format(filepath, outdir)
+        value = 'FeatureExtraction.exe -fdir "{}" -out_dir "{}" -2Dfp -tracked {}'.format(filepath, outdir,command)
     runcmd = subprocess.check_call(value, cwd=place, shell=True)
     print(runcmd)
 

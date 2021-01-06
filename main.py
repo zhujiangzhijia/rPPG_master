@@ -8,6 +8,9 @@ import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
 import cv2
+
+
+# Import local
 import config as cf
 from src.roi_detection.landmark_extractor import *
 from src.pulse_extraction import *
@@ -17,7 +20,6 @@ from src.tools.evaluate import *
 from src.tools.opensignal import *
 from src.tools.peak_detector import *
 from src import preprocessing
-from biosppy import signals
 
 
 
@@ -25,9 +27,9 @@ from biosppy import signals
 # openface(cf.FILE_PATH, cf.DIR_PATH)
 
 # ROI検出
-# df = pd.read_csv(cf.LANDMARK_PATH, header = 0).rename(columns=lambda x: x.replace(' ', ''))
-# rgb_signal = FaceAreaRoIVideo(df, cf.FILE_PATH) # MouseRoI(cf.FILE_PATH)
-# np.savetxt(cf.OUTPUT_PATH, rgb_signal, delimiter=",")
+df = pd.read_csv(cf.LANDMARK_PATH, header = 0).rename(columns=lambda x: x.replace(' ', ''))
+rgb_signal = FaceAreaRoI(df, cf.FILE_PATH) # MouseRoI(cf.FILE_PATH)
+np.savetxt(cf.OUTPUT_PATH, rgb_signal, delimiter=",")
 
 # RPPG
 rgb_signal = np.loadtxt(cf.OUTPUT_PATH, delimiter=",")

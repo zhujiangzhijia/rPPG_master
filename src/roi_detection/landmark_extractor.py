@@ -98,6 +98,9 @@ def ShibataRoI(df,cap):
     cap.release()
     cv2.destroyAllWindows()
     return allRGBArrays
+def plot_roi(frame,hight_top,hight_bottom,width_left,width_right):
+    cv2.rectangle(frame, (width_right, hight_bottom), (width_left, hight_top), color=(0,0,255),thickness= 4)
+
 
 
 def MultipleRoI(df, dirpath, skin_detection=True, pixsize=20):
@@ -166,37 +169,47 @@ def ScanFaceSize(df,initframe=200):
     return wide_face,wide_nose,hight_eye,hight_cheek,hight_Eyebrows,hignht_nose
 
 
-def FaceAreaRoI(df, dirpath,skin_detection=True):
+def FaceAreaRoI(df,filepath,skin_detection=True):
     """
     openfaceのlandmarkを使って，顔領域を選択し平均化されたRGBを返す
     """
     # Import landmark 
     pix_x_frames = df.loc[:, df.columns.str.contains('x_')].values.astype(np.int)
     pix_y_frames = df.loc[:, df.columns.str.contains('y_')].values.astype(np.int)
-    # ファイル一覧を取得
-    files = []
-    i = 0
-    for filename in os.listdir(dirpath):
-        if os.path.isfile(os.path.join(dirpath, filename)): #ファイルのみ取得
-            files.append(filename)
 
+    if os.path.isfile(filepath):
+        cap = cv2.VideoCapture(filepath)
+        format_video = True
+        total_frame_num = int(cap.get(cv2.CAP_PROP_FRAME_COUNT))
+    else:
+        files = []
+        for filename in os.listdir(filepath):
+            if os.path.isfile(os.path.join(filepath, filename)): #ファイルのみ取得
+                files.append(filename)
+        total_frame_num = len(files)
+        format_video = False
+    
     # loop from first to last frame
-    for fname in files:
-        print(os.path.join(dirpath, fname))
-        frame = cv2.imread(os.path.join(dirpath, fname))
+    for i in range(total_frame_num):
+        print("Frame: {}/{}".format(i,total_frame_num))
         pix_x = pix_x_frames[i,:].reshape(-1, 1)
         pix_y = pix_y_frames[i,:].reshape(-1, 1)
 
+        if format_video:
+            ret, frame = cap.read()
+        else:
+            frame = cv2.imread(os.path.join(filepath, files[i]))
+            
         # FaceMask by features point
         mask = RoIDetection(frame,pix_x,pix_y)
         face_img = cv2.bitwise_and(frame, frame, mask=mask)
-        cv2.imshow("frame1", face_img)
+        cv2.imshow("RoI Detect", face_img)
 
         # skin area detection HSV & YCbCr
         if skin_detection:
             skin_mask = sd.SkinDetect(face_img)
             mask = cv2.bitwise_and(mask, skin_mask, skin_mask)
-            cv2.imshow("skin_mask", skin_mask)
+            cv2.imshow("Skin Mask", skin_mask)
 
         # merge the mask image
         # average bgr components
@@ -208,7 +221,7 @@ def FaceAreaRoI(df, dirpath,skin_detection=True):
         else:   
             rgb_components = np.concatenate([rgb_components, ave_rgb], axis=0)
 
-        cv2.imshow("frame2", mask_img)
+        cv2.imshow("Mask Img", mask_img)
         i = i + 1
         if cv2.waitKey(1) & 0xFF == ord('q'):
             break
@@ -216,85 +229,6 @@ def FaceAreaRoI(df, dirpath,skin_detection=True):
     cv2.destroyAllWindows()
     return rgb_components
 
-
-def FaceAreaRoIVideo(df, VideoPath):
-    """
-    openfaceのlandmarkを使って，顔領域を選択し平均化されたRGBを返す
-    """
-    # Import landmark 
-    pix_x_frames = df.loc[:, df.columns.str.contains('x_')].values.astype(np.int)
-    pix_y_frames = df.loc[:, df.columns.str.contains('y_')].values.astype(np.int)
-    cap = cv2.VideoCapture(VideoPath)
-
-    print(cap.get(cv2.CAP_PROP_FRAME_COUNT))
-    # loop from first to last frame
-    for i in range(int(cap.get(cv2.CAP_PROP_FRAME_COUNT))):
-        print("Frame: {}/{}".format(i,cap.get(cv2.CAP_PROP_FRAME_COUNT)))
-        ret, frame = cap.read()
-        height, width = frame.shape[:2]
-        pix_x = pix_x_frames[i,:].reshape(-1, 1)
-        pix_y = pix_y_frames[i,:].reshape(-1, 1)
-
-        # roi segmentation
-        landmarks = np.concatenate([pix_x, pix_y],axis=1)
-        white_img = np.zeros((int(height),int(width)),np.uint8)
-        # face
-        points = np.concatenate([landmarks[:17,:],landmarks[17:27,:][::-1,:]],axis=0)
-        face_mask = cv2.fillConvexPoly(white_img, points = points, color=(255, 255, 255))
-        white_img = np.zeros((int(height),int(width)),np.uint8)
-        # mask mouse
-        cv2.fillConvexPoly(white_img, points = landmarks[48:60,:], color=(255, 255, 255))
-        # mask eye
-        cv2.fillConvexPoly(white_img, points = landmarks[36:42,:], color=(255, 255, 255))
-        outlier_mask = cv2.fillConvexPoly(white_img, points = landmarks[42:48,:], color=(255, 255, 255))
-        # merge mask
-        roi_mask = cv2.bitwise_xor(face_mask,outlier_mask)
-
-        # skin Color detection HSV & YCbCr
-        skin_maskHSV = sd.SkinDetectHSV(frame)
-        skin_maskYUV = sd.SkinDetectYCbCr(frame)
-
-        # average bgr components
-        # mask = cv2.bitwise_and(roi_mask, skin_maskYUV, skin_maskHSV)
-        mask = cv2.bitwise_and(roi_mask,skin_maskHSV, skin_maskHSV)
-        mask_img = cv2.bitwise_and(frame, frame, mask=mask)
-        ave_rgb = np.array(cv2.mean(frame, mask=mask)[::-1][1:]).reshape(1,-1)
-
-        if i == 0:
-            rgb_components = ave_rgb
-        else:   
-            rgb_components = np.concatenate([rgb_components, ave_rgb], axis=0)
-
-        cv2.imshow("frame", mask_img)
-        i = i + 1
-        if cv2.waitKey(1) & 0xFF == ord('q'):
-            break
-        print(i)
-
-    cv2.destroyAllWindows()
-    return rgb_components
-
-def plot_roi(frame,hight_top,hight_bottom,width_left,width_right):
-    cv2.rectangle(frame, (width_right, hight_bottom), (width_left, hight_top), color=(0,0,255),thickness= 4)
-
-def RoIDetection(frame,pix_x,pix_y):
-    height, width = frame.shape[:2]
-    # roi segmentation
-    landmarks = np.concatenate([pix_x, pix_y],axis=1)
-    white_img = np.zeros((int(height),int(width)),np.uint8)
-    # face
-    points = np.concatenate([landmarks[:17,:],landmarks[17:27,:][::-1,:]],axis=0)
-    face_mask = cv2.fillConvexPoly(white_img, points = points, color=(255, 255, 255))
-    # mouse & eye
-    white_img = np.zeros((int(height),int(width)),np.uint8)
-    # mask mouse
-    cv2.fillConvexPoly(white_img, points = landmarks[48:60,:], color=(255, 255, 255))
-    # mask eye
-    cv2.fillConvexPoly(white_img, points = landmarks[36:42,:], color=(255, 255, 255))
-    outlier_mask = cv2.fillConvexPoly(white_img, points = landmarks[42:48,:], color=(255, 255, 255))
-    # merge mask
-    roi_mask = cv2.bitwise_xor(face_mask,outlier_mask)
-    return roi_mask
 
 
 def MouseRoI(dirpath):
@@ -386,7 +320,24 @@ def MouseRoIVideo(cap):
     cv2.destroyAllWindows()
     return rgb_components
 
-
+def RoIDetection(frame,pix_x,pix_y):
+    height, width = frame.shape[:2]
+    # roi segmentation
+    landmarks = np.concatenate([pix_x, pix_y],axis=1)
+    white_img = np.zeros((int(height),int(width)),np.uint8)
+    # face
+    points = np.concatenate([landmarks[:17,:],landmarks[17:27,:][::-1,:]],axis=0)
+    face_mask = cv2.fillConvexPoly(white_img, points = points, color=(255, 255, 255))
+    # mouse & eye
+    white_img = np.zeros((int(height),int(width)),np.uint8)
+    # mask mouse
+    cv2.fillConvexPoly(white_img, points = landmarks[48:60,:], color=(255, 255, 255))
+    # mask eye
+    cv2.fillConvexPoly(white_img, points = landmarks[36:42,:], color=(255, 255, 255))
+    outlier_mask = cv2.fillConvexPoly(white_img, points = landmarks[42:48,:], color=(255, 255, 255))
+    # merge mask
+    roi_mask = cv2.bitwise_xor(face_mask,outlier_mask)
+    return roi_mask
 
 def AveragedRGB(roi):
     """

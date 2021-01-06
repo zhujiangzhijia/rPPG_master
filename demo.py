@@ -18,11 +18,7 @@ cap = cv2.VideoCapture(filepath)
 fourcc = cv2.VideoWriter_fourcc('m','p','4','v')
 # fourcc = cv2.VideoWriter_fourcc(*'XVID')  #fourccを定義
 # video = cv2.VideoWriter('demo_stationary.mp4', fourcc, 100.0, (720, 540))
-<<<<<<< Updated upstream
 video = cv2.VideoWriter('demo_stationary.mp4', fourcc, 40.0, (1200, 600))
-=======
-video = cv2.VideoWriter('demo_stationary_20201127.mp4', fourcc, 40.0, (1200, 600))
->>>>>>> Stashed changes
 
 # rPPG設定
 rgb = np.loadtxt(rgbpath, delimiter=",")
