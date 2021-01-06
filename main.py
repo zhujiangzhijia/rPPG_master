@@ -21,7 +21,9 @@ from src.tools.opensignal import *
 from src.tools.peak_detector import *
 from src import preprocessing
 
-
+fps = 100
+c_fps = 100
+sample_rate = 100 # ECGのサンプリングレート
 
 # OPEN FACEを実行
 # openface(cf.FILE_PATH, cf.DIR_PATH)
@@ -31,23 +33,21 @@ df = pd.read_csv(cf.LANDMARK_PATH, header = 0).rename(columns=lambda x: x.replac
 rgb_signal = FaceAreaRoI(df, cf.FILE_PATH) # MouseRoI(cf.FILE_PATH)
 np.savetxt(cf.OUTPUT_PATH, rgb_signal, delimiter=",")
 
-# RPPG
-rgb_signal = np.loadtxt(cf.OUTPUT_PATH, delimiter=",")
-data_time = np.loadtxt(r"C:\Users\akito\Desktop\Hassylab\projects\RPPG\100Hz\timestamp.csv")
-print(np.mean(1/np.diff(data_time)))
-
-ref_signal = np.loadtxt(cf.REF_PATH)[:,-2]
-ref_peaks = signals.ecg.ecg(ref_signal, sampling_rate=100, show=True)[-2]
-
-
 # 信号の目的のレートへのリサンプリング
-rgb_signal = preprocessing.rgb_resample(rgb_signal,data_time,fs=100)
+rgb_signal = np.loadtxt(cf.OUTPUT_PATH, delimiter=",")
+data_time = np.loadtxt(cf.TIME_PATH)
+rgb_signal = preprocessing.rgb_resample(rgb_signal,data_time,fs=fps)
+
+# RPPG
+rppg_pos = POSMethod(rgb_signal, fs=fps, filter=True)
+rppg_ts = np.arange(0,len(rppg_pos)/fps,1/fps)
+est_rpeaks = RppgPeakDetection(rppg_pos, rppg_ts, fr=c_fps, show=True, filter=False, col=0.01)
 
 
-rppg_pos = POSMethod(rgb_signal, fs=100, filter=True)
-rppg_ts = np.arange(0,len(rppg_pos)/100,1/100)
-# _,axes = plt.subplots(2,1,sharex=True)
-est_rpeaks = RppgPeakDetection(rppg_pos,rppg_ts, fr=100,show=True, filter=False, col=0.01)
+
+# ref_signal = np.loadtxt(cf.REF_PATH)[:,-2]
+# ref_peaks = signals.ecg.ecg(ref_signal, sampling_rate=sample_rate, show=True)[-2]
+
 
 # rppg_result = np.concatenate([rppg_ts.reshape(-1,1),rppg_pos.reshape(-1,1)],axis=1)
 # np.savetxt(r"C:\Users\akito\Desktop\Hassylab\projects\RPPG\dendai_JointResearch\source\共有データ\rppg_signal.csv",rppg_result,delimiter=",")
