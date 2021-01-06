@@ -56,14 +56,14 @@ def RRInterval(rpeaks):
     rri = rpeaks[1:]-rpeaks[:-1]
     return rri
 
-def mod_frame(C_rgb, ts, fs=30):
+def rgb_resample(rgb_signals, ts, fs=100):
     """
-    フレーム間の時間ずれ補正
-    """
-    C_interpol = interpolate.interp1d(ts, C_rgb, "cubic",axis=0)
+    一様にサンプリングされていない信号の目的のレートへのリサンプリング
+    """                                
+    rgb_signals_interpol = interpolate.interp1d(ts, rgb_signals, "linear",axis=0)
     t_interpol = np.arange(ts[0], ts[-1], 1./fs)
-    C_n = C_interpol(t_interpol)
-    return C_n
+    rgb_signals_n = rgb_signals_interpol(t_interpol)
+    return rgb_signals_n
 
 
 

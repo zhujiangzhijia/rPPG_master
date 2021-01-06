@@ -40,14 +40,9 @@ ref_signal = np.loadtxt(cf.REF_PATH)[:,-2]
 ref_peaks = signals.ecg.ecg(ref_signal, sampling_rate=100, show=True)[-2]
 
 
-# 標準化
-_, r_resamp = linear_resampling(rgb_signal[:,0],data_time, fr=100)
-_, g_resamp = linear_resampling(rgb_signal[:,1],data_time, fr=100)
-data_time, b_resamp = linear_resampling(rgb_signal[:,2],data_time, fr=100)
-rgb_signal = np.concatenate([r_resamp.reshape(-1,1),
-                             g_resamp.reshape(-1,1),
-                             b_resamp.reshape(-1,1)],
-                             axis=1)
+# 信号の目的のレートへのリサンプリング
+rgb_signal = preprocessing.rgb_resample(rgb_signal,data_time,fs=100)
+
 
 rppg_pos = POSMethod(rgb_signal, fs=100, filter=True)
 rppg_ts = np.arange(0,len(rppg_pos)/100,1/100)
