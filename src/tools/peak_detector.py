@@ -69,12 +69,12 @@ def RppgPeakCorrection(RRIpeaks, col=0.80):
         i = i + 1
     return RRIpeaks
 
-def resampling(rppg, ts, fr=100):
+def resampling(rppg, fs, fr):
     """
     リサンプリング
     3次のスプライン補間
     """
-    ts = np.arange(0, len(rppg)/fs, 1./fs)[:int(len(rppg))]
+    ts = np.arange(0, len(rppg)/fs, 1./fs)
     rppg_interpol = interpolate.interp1d(ts, rppg, "cubic")
     t_interpol = np.arange(ts[0], ts[-1], 1./fr)
     resamp_rppg = rppg_interpol(t_interpol)
