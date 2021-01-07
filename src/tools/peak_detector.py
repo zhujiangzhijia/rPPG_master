@@ -3,58 +3,41 @@ peak to peak detector
 """
 # coding: utf-8
 import numpy as np
-from scipy import interpolate
+from scipy import interpolate,signal
 from .. import preprocessing
+from ..tools import evaluate
 import matplotlib.pyplot as plt
 
-def RppgPeakDetection(ppg,fs,fr=100, show=False, filter=False, col=0.7):
+
+def RppgPeakDetection(ppg,fs,fr=100, show=False, filter=False, range=0.7):
     """
     rPPG peak検出
     peak時間を返り値とする
     """
-    # Moving Average
+    
     if filter==True:
+        # Moving Average
         #ppg = preprocessing.MovingAve(ppg, num=3)
         ppg =  preprocessing.ButterFilter(ppg, 0.7, 2.5, fs)
     
     # Resampling
-    t_interpol, resamp_rppg = resampling(ppg, fs, fr)
-    
-    # 1st Derivative
-    ppg_dot = np.gradient(resamp_rppg, 1/fr)
+    t_interpol, resamp_ppg = resampling(ppg, fs, fr)
 
-    # Simple binary filter
-    binary = np.copy(ppg_dot)
-    binary[binary >= 0] = 1
-    binary[binary < 0] = 0
-    # zero cross
-    binary_diff = np.diff(binary)
-    setlists = np.where(binary_diff > 0)[0]
-    # peak detection
-    peak_indexes = np.array([[]])
-    for i in range(len(setlists)-1):
-        onset = setlists[i]
-        offset = setlists[i+1]
-        peak_index = onset + np.argmax(resamp_rppg[onset: offset])
-        peak_indexes = np.append(peak_indexes, peak_index)
 
-    # peak correction 
-    rpeaks = t_interpol[peak_indexes.astype(np.int64)]
-    rppg_amp = resamp_rppg[peak_indexes.astype(np.int64)]
-    rpeaks = rpeaks[(rppg_amp>np.mean(rppg_amp)*col)]
+    order=int(1*0.60*fr) # RRI[s] * range[%] * rate[hz] 
+    peak_indexes = signal.argrelmax(resamp_ppg,order=order)
+    rpeaks = t_interpol[peak_indexes]
 
-    if show == True:
-        import matplotlib.pyplot as plt
+    if show:
         fig,axes = plt.subplots(2, 1, sharex=True)
-        axes[0].plot(t_interpol, resamp_rppg)
+        axes[0].plot(t_interpol, resamp_ppg)
         axes[0].set_title("Resample signal")
         for rpeak in rpeaks:
             axes[0].axvline(rpeak)
         axes[1].set_title("RRI signal")
         axes[1].plot(rpeaks[1:],rpeaks[1:]-rpeaks[:-1])
         plt.show()
-
-    return rpeaks*1000
+    return rpeaks*1000 # [ms]
 
 def RppgPeakCorrection(RRIpeaks, col=0.80):
     """

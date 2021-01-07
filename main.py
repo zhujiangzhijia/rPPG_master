@@ -21,27 +21,28 @@ from src.tools.opensignal import *
 from src.tools.peak_detector import *
 from src import preprocessing
 
-fps = 100
+fps = 30
 c_fps = 100
 sample_rate = 100 # ECGのサンプリングレート
 
 # OPEN FACEを実行
-# openface(cf.FILE_PATH, cf.DIR_PATH)
+# openface(cf.FILE_PATH, cf.OUT_FOLDER)
 
 # ROI検出
-df = pd.read_csv(cf.LANDMARK_PATH, header = 0).rename(columns=lambda x: x.replace(' ', ''))
-rgb_signal = FaceAreaRoI(df, cf.FILE_PATH) # MouseRoI(cf.FILE_PATH)
-np.savetxt(cf.OUTPUT_PATH, rgb_signal, delimiter=",")
+# df = pd.read_csv(cf.LAMDMARK_PATH, header = 0).rename(columns=lambda x: x.replace(' ', ''))
+# rgb_signal = FaceAreaRoI(df, cf.FILE_PATH) # MouseRoI(cf.FILE_PATH)
+# np.savetxt(os.path.join(cf.OUT_FOLDER,"rgb signal.csv"), rgb_signal, delimiter=",")
 
 # 信号の目的のレートへのリサンプリング
-rgb_signal = np.loadtxt(cf.OUTPUT_PATH, delimiter=",")
-data_time = np.loadtxt(cf.TIME_PATH)
+data_time = np.loadtxt(cf.TIME_PATH,delimiter=",")
+rgb_signal = np.loadtxt(os.path.join(cf.OUT_FOLDER,"rgb signal.csv"),delimiter=",")
 rgb_signal = preprocessing.rgb_resample(rgb_signal,data_time,fs=fps)
 
+
 # RPPG
-rppg_pos = POSMethod(rgb_signal, fs=fps, filter=True)
-rppg_ts = np.arange(0,len(rppg_pos)/fps,1/fps)
-est_rpeaks = RppgPeakDetection(rppg_pos, rppg_ts, fr=c_fps, show=True, filter=False, col=0.01)
+rppg_pos = POSMethod(rgb_signal, fs=fps ,filter=True)
+np.savetxt(os.path.join(cf.OUT_FOLDER,"rPPG POS.csv"), rgb_signal, delimiter=",")
+est_rpeaks = RppgPeakDetection(rppg_pos, fs=fps, fr=c_fps, show=True)
 
 
 
