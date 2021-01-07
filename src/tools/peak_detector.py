@@ -20,7 +20,7 @@ def RppgPeakDetection(ppg,fs,fr=100, show=False, filter=False, range=0.7):
         #ppg = preprocessing.MovingAve(ppg, num=3)
         ppg =  preprocessing.ButterFilter(ppg, 0.7, 2.5, fs)
 
-    HR_e,_ = evaluate.CalcSNR(resamp_ppg,fs)
+    HR_e,_ = evaluate.CalcSNR(ppg,fs)
     
     # Resampling
     t_interpol, resamp_ppg = resampling(ppg, fs, fr)
