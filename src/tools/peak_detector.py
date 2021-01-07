@@ -19,12 +19,13 @@ def RppgPeakDetection(ppg,fs,fr=100, show=False, filter=False, range=0.7):
         # Moving Average
         #ppg = preprocessing.MovingAve(ppg, num=3)
         ppg =  preprocessing.ButterFilter(ppg, 0.7, 2.5, fs)
+
+    HR_e,_ = evaluate.CalcSNR(resamp_ppg,fs)
     
     # Resampling
     t_interpol, resamp_ppg = resampling(ppg, fs, fr)
 
-
-    order=int(1*0.60*fr) # RRI[s] * range[%] * rate[hz] 
+    order=int(1/HR_e * range * fr) # RRI[s] * range[%] * rate[hz] 
     peak_indexes = signal.argrelmax(resamp_ppg,order=order)
     rpeaks = t_interpol[peak_indexes]
 
