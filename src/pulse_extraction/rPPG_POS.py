@@ -11,7 +11,7 @@ from .. import preprocessing
 from . import cdf_filter
 import matplotlib.pyplot as plt
 
-def POSMethod(rgb_components, WinSec=1.6, LPF=0.7, HPF=2.5, fs=30,filter = False):
+def POSMethod(rgb_components, WinSec=1.6, LPF=0.7, HPF=2.5, fs=30, filter = False):
     """
     POS method
     WinSec :was a 32 frame window with 20 fps camera
