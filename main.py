@@ -8,7 +8,7 @@ import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
 import cv2
-
+from biosppy import signals 
 
 # Import local
 import config as cf
@@ -21,33 +21,99 @@ from src.tools.opensignal import *
 from src.tools.peak_detector import *
 from src import preprocessing
 
-fps = 30
-c_fps = 100
-sample_rate = 100 # ECGのサンプリングレート
-
-# OPEN FACEを実行
-# openface(cf.FILE_PATH, cf.OUT_FOLDER)
-
-# ROI検出
-# df = pd.read_csv(cf.LAMDMARK_PATH, header = 0).rename(columns=lambda x: x.replace(' ', ''))
-# rgb_signal = FaceAreaRoI(df, cf.FILE_PATH) # MouseRoI(cf.FILE_PATH)
-# np.savetxt(os.path.join(cf.OUT_FOLDER,"rgb signal.csv"), rgb_signal, delimiter=",")
-
-# 信号の目的のレートへのリサンプリング
-data_time = np.loadtxt(cf.TIME_PATH,delimiter=",")
-rgb_signal = np.loadtxt(os.path.join(cf.OUT_FOLDER,"rgb signal.csv"),delimiter=",")
-rgb_signal = preprocessing.rgb_resample(rgb_signal,data_time,fs=fps)
+infolder = r"D:\rPPGDataset\Log\luminance\shizuya"
+outfolder = r"D:\rPPGDataset\Analysis\luminance\shizuya"
 
 
-# RPPG
-rppg_pos = POSMethod(rgb_signal, fs=fps ,filter=True)
-np.savetxt(os.path.join(cf.OUT_FOLDER,"rPPG POS.csv"), rgb_signal, delimiter=",")
-est_rpeaks = RppgPeakDetection(rppg_pos, fs=fps, fr=c_fps, show=True)
+def ALL_Analysis(input_folder,output_folder):
+    file_lists = os.listdir(input_folder)
+    for i in range(0,len(file_lists)-2,3):
+        pathlist = file_lists[i:i+3]
+        CamPath = [s for s in pathlist if 'Cam' in s][0]
+        ECGPath = [s for s in pathlist if 'ECG' in s][0]
+        TsPath = [s for s in pathlist if 'timestamp' in s][0]
+        print(CamPath.split())
+        for item in CamPath.split():
+            if "fps" in item:
+                fps = item[:-3]
+                action_rppg(input_folder,output_folder,CamPath,ECGPath,TsPath,fps=float(fps))
+            else:
+                action_rppg(input_folder,output_folder,CamPath,ECGPath,TsPath,fps=30)
+
+
+def action_rppg(indict,outdict,CamPath,ECGPath,TsPath,fps):
+    c_fps = 100
+    sample_rate = 100 # ECGのサンプリングレート
+    cap = cv2.VideoCapture(os.path.join(indict,CamPath))
+    ret, frame = cap.read()
+    cv2.imwrite(os.path.join(r"D:\rPPGDataset\Figure\Images\tozyo\luminance",CamPath[:-4]+".bmp"), frame)
+
+    #OPEN FACEを実行
+    # print(os.path.join(indict,CamPath))
+    # openface(os.path.join(indict,CamPath), outdict)
+    # #ROI検出
+    # LAND_PATH = os.path.join(outdict,CamPath[:-4]+".csv")
+    # df = pd.read_csv(LAND_PATH, header = 0).rename(columns=lambda x: x.replace(' ', ''))
+    # rgb_signal = FaceAreaRoI(df, os.path.join(indict,CamPath))
+    # np.savetxt(os.path.join(outdict,CamPath[:-8]+" RGB Signals.csv"), rgb_signal, delimiter=",")
+
+    # # 信号の目的のレートへのリサンプリング
+    # data_time = np.loadtxt(os.path.join(indict,TsPath),delimiter=",")
+    # rgb_signal = preprocessing.rgb_resample(rgb_signal,data_time,fs=fps)
+    # # RPPG
+    # rppg_pos = POSMethod(rgb_signal, fs=fps ,filter=True)
+    # # rppg_green = GreenMethod(rgb_signal, fs=fps)
+    # # rppg_softsig = SoftsigMethod(rgb_signal, fs=fps)
+    # # rppg_signals = np.concatenate([rppg_pos,rppg_green,rppg_softsig],axis=1)
+    # np.savetxt(os.path.join(outdict,CamPath[:-8]+" POS Signals.csv"), rppg_pos, delimiter=",")
+
+    # est_rpeaks = RppgPeakDetection(rppg_pos, fs=fps, fr=c_fps, show=False)
+    # np.savetxt(os.path.join(outdict,CamPath[:-8]+" POS EST RRI.csv"), est_rpeaks, delimiter=",")
+    # ref_signal = np.loadtxt(os.path.join(indict,ECGPath))
+    # ref_rpeaks = signals.ecg.ecg(ref_signal, sampling_rate=sample_rate, show=False)[-2]
+    # np.savetxt(os.path.join(outdict,CamPath[:-8]+" REF RRI.csv"), ref_rpeaks, delimiter=",")
+
+# infolder1 = r"D:\rPPGDataset\Log\framerate\tohma"
+# outfolder1 = r"D:\rPPGDataset\Analysis\framerate\tohma"
+# ALL_Analysis(infolder1,outfolder1)
+# infolder1 = r"D:\rPPGDataset\Log\motion\tohma"
+# outfolder1 = r"D:\rPPGDataset\Analysis\motion\tohma"
+# ALL_Analysis(infolder1,outfolder1)
 
 
 
-# ref_signal = np.loadtxt(cf.REF_PATH)[:,-2]
-# ref_peaks = signals.ecg.ecg(ref_signal, sampling_rate=sample_rate, show=True)[-2]
+infolder2 = r"D:\rPPGDataset\Log\luminance\tozyo"
+outfolder2 = r"D:\rPPGDataset\Analysis\luminance\tozyo"
+ALL_Analysis(infolder2,outfolder2)
+
+# infolder2 = r"D:\rPPGDataset\Log\motion\shizuya"
+# outfolder2 = r"D:\rPPGDataset\Analysis\motion\shizuya"
+# ALL_Analysis(infolder2,outfolder2)
+
+
+# infolder3 = r"D:\rPPGDataset\Log\framerate\tozyo"
+# outfolder3= r"D:\rPPGDataset\Analysis\framerate\tozyo"
+# ALL_Analysis(infolder3,outfolder3)
+
+# infolder3 = r"D:\rPPGDataset\Log\motion\tozyo"
+# outfolder3= r"D:\rPPGDataset\Analysis\motion\tozyo"
+# ALL_Analysis(infolder3,outfolder3)
+
+
+
+
+
+
+
+
+
+exit()
+
+
+
+
+
+
 
 
 # rppg_result = np.concatenate([rppg_ts.reshape(-1,1),rppg_pos.reshape(-1,1)],axis=1)

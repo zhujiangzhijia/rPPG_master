@@ -25,7 +25,7 @@ def RppgPeakDetection(ppg,fs,fr=100, show=False, filter=False, range=0.7):
     # Resampling
     t_interpol, resamp_ppg = resampling(ppg, fs, fr)
 
-    order=int(1/HR_e * range * fr) # RRI[s] * range[%] * rate[hz] 
+    order=int(1 * range * fr) # RRI[s] * range[%] * rate[hz] 
     peak_indexes = signal.argrelmax(resamp_ppg,order=order)
     rpeaks = t_interpol[peak_indexes]
 
@@ -58,7 +58,7 @@ def resampling(rppg, fs, fr):
     リサンプリング
     3次のスプライン補間
     """
-    ts = np.arange(0, len(rppg)/fs, 1./fs)
+    ts = np.arange(0, len(rppg)/fs, 1./fs)[:len(rppg)]
     rppg_interpol = interpolate.interp1d(ts, rppg, "cubic")
     t_interpol = np.arange(ts[0], ts[-1], 1./fr)
     resamp_rppg = rppg_interpol(t_interpol)
