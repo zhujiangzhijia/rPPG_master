@@ -19,8 +19,6 @@ def ImprovedSoftSig(R,G,B,fs):
     ksize   = (2/step+1)^2*(1/step+1)
     SN      = zeros(1,ksize)
     v       = zeros(3,ksize)
-
-
     for v2 in range(0,1,step): # v2: G
         for v1 in range(-1,1,step): # v1:R
             for v3 in range(-1,1,step): # v3: B

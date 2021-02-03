@@ -9,25 +9,24 @@ from ..tools import evaluate
 import matplotlib.pyplot as plt
 
 
-def RppgPeakDetection(ppg,fs,fr=100, show=False, filter=False, range=0.7):
+def RppgPeakDetection(ppg,fs,fr=100, show=False, filter=False, range=0.6):
     """
     rPPG peak検出
     peak時間を返り値とする
     """
-    
+    hr_f,_ = evaluate.CalcSNR(ppg,fs=fs,nfft=512)
+
     if filter==True:
         # Moving Average
-        #ppg = preprocessing.MovingAve(ppg, num=3)
-        ppg =  preprocessing.ButterFilter(ppg, 0.7, 2.5, fs)
-
-    HR_e,_ = evaluate.CalcSNR(ppg,fs)
+        ppg =  preprocessing.ButterFilter(ppg, 0.7, 2.5, fs)    
     
     # Resampling
     t_interpol, resamp_ppg = resampling(ppg, fs, fr)
-
-    order=int(1 * range * fr) # RRI[s] * range[%] * rate[hz] 
+    
+    order=int((1/hr_f) * range * fr) # RRI[s] * range[%] * rate[hz] = サンプル数
     peak_indexes = signal.argrelmax(resamp_ppg,order=order)
     rpeaks = t_interpol[peak_indexes]
+
 
     if show:
         fig,axes = plt.subplots(2, 1, sharex=True)
@@ -52,6 +51,48 @@ def RppgPeakCorrection(RRIpeaks, col=0.80):
             RRIpeaks = np.delete(RRIpeaks, i)
         i = i + 1
     return RRIpeaks
+
+def OutlierDetect(rpeaks=None,threshold=0.25):
+    """RRI時系列と平均値の差分を算出し，閾値を使って外れ値を取り除く
+    Kubiosより参照
+    !注意!補間するため，rpeaksからrriは算出できなくなる
+    ----------
+	rpeaks : array
+		R-peak locations in [ms]
+    threshold: float
+        外れ値を検出するレベル．
+        この値が高いほど外れ値と検出されるピークは多くなる
+    ----------
+    threshold level
+    
+    very low : 0.45sec
+    low : 0.35sec
+    medium : 0.25sec
+    strong : 0.15sec
+    very strong : .05sec
+    """
+    # RRIを取得
+    rri = rpeaks[1:]-rpeaks[:-1]
+    rpeaks = rpeaks[1:]
+
+    # median filter
+    median_rri = signal.medfilt(rri, 5)
+    detrend_rri = rri - median_rri
+
+    # 閾値より大きく外れたデータを取得
+    index_outlier = np.where(np.abs(detrend_rri) > (threshold*1000))[0]
+    print("{} point detected".format(index_outlier.size))
+
+    if index_outlier.size > 0:
+        # 閾値を超えれば，スプライン関数で補間
+        flag = np.ones(len(rri), dtype=bool)
+        flag[index_outlier.tolist()] = False
+        rri_spline = interpolate.interp1d(rpeaks[flag], rri[flag], 'cubic')
+        rri_outlier = rri_spline(rpeaks[np.logical_not(flag)])
+        rri[np.logical_not(flag)] = rri_outlier
+
+    return rpeaks, rri
+
 
 def resampling(rppg, fs, fr):
     """

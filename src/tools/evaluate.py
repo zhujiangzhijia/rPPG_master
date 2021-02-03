@@ -64,6 +64,7 @@ def CalcSNR(ppg, HR_F=None, fs=30, nfft=512):
     SNR = 10*np.log10((SPower)**2/(AllPower-SPower)**2)
     return HR_F, SNR
 
+
 def CalcFreqHR(ppg, fs=30, nfft=512):
     """
     Calculate Frequency domain heart rate
@@ -80,7 +81,8 @@ def CalcFreqHR(ppg, fs=30, nfft=512):
         HR_F_t = 60*f[np.argmax(Sxx_t)]
         HR_F = np.append(HR_F, HR_F_t)
     return t, HR_F
-    
+
+
 def CalcTimeHR(rpeaks, rri, segment=17.06, overlap=None):
     """
     Time domain Heart rate
@@ -96,6 +98,8 @@ def CalcTimeHR(rpeaks, rri, segment=17.06, overlap=None):
         HR_T = np.append(HR_T, ave_hr)
     ts = starts + overlap
     return ts, HR_T 
+
+
 
 def Calc_PSD(rri_peaks, rri=None, nfft=2**8):
     """
@@ -118,3 +122,13 @@ def Calc_PSD(rri_peaks, rri=None, nfft=2**8):
     HF = np.sum(powers[(frequencies>0.15) & (frequencies<=0.40)]) * 0.25
     print("Result :LF={:2f}, HF={:2f}, LF/HF={:2f}".format(LF, HF, LF/HF))
     return {"LF_abs":LF,"HF_abs":HF,"LFHFratio":LF/HF}
+
+
+
+
+
+if __name__ == "__main__":
+    path = r"D:\rPPGDataset\Analysis\luminance\shizuya\2021-01-05 18-45-41.248194 Front And Celling 700lux rPPG Signals.csv"
+    rppg_signal = np.loadtxt(path,delimiter=",")[:,0]
+    fs = 30
+    

@@ -169,7 +169,7 @@ def ScanFaceSize(df,initframe=200):
     return wide_face,wide_nose,hight_eye,hight_cheek,hight_Eyebrows,hignht_nose
 
 
-def FaceAreaRoI(df,filepath,skin_detection=True):
+def FaceAreaRoI(df,filepath,skinpath,show=False):
     """
     openfaceのlandmarkを使って，顔領域を選択し平均化されたRGBを返す
     """
@@ -203,13 +203,16 @@ def FaceAreaRoI(df,filepath,skin_detection=True):
         # FaceMask by features point
         mask = RoIDetection(frame,pix_x,pix_y)
         face_img = cv2.bitwise_and(frame, frame, mask=mask)
-        cv2.imshow("RoI Detect", face_img)
+        if show:
+            cv2.imshow("RoI Detect", face_img)
 
         # skin area detection HSV & YCbCr
-        if skin_detection:
-            skin_mask = sd.SkinDetect(face_img)
+        if skinpath is not None:
+            skin_mask = sd.SkinDetectTrack(face_img,skinpath)
             mask = cv2.bitwise_and(mask, skin_mask, skin_mask)
-            cv2.imshow("Skin Mask", skin_mask)
+            if show:
+                cv2.imshow("Skin Mask", skin_mask)
+
 
         # merge the mask image
         # average bgr components
@@ -220,8 +223,8 @@ def FaceAreaRoI(df,filepath,skin_detection=True):
             rgb_components = ave_rgb
         else:   
             rgb_components = np.concatenate([rgb_components, ave_rgb], axis=0)
-
-        cv2.imshow("Mask Img", mask_img)
+        if show:
+            cv2.imshow("Mask Img", mask_img)
         i = i + 1
         if cv2.waitKey(1) & 0xFF == ord('q'):
             break

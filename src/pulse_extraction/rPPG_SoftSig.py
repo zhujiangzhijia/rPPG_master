@@ -33,7 +33,6 @@ def SoftsigMethod(rgb_components, WinSec=3.2, LPF=0.6, HPF=3.0, fs=None, filter=
         Cn = C / np.average(C, axis=0) - 1
         # softsig
         w = softsig_selection(Cn,fs)
-        print(w)
         P = np.dot(Cn,w.reshape(-1,1))
         # overlap-adding
         H[t:t+l] = H[t:t+l] + (np.ravel(P)-np.mean(P))/np.std(P)
@@ -44,7 +43,7 @@ def SoftsigMethod(rgb_components, WinSec=3.2, LPF=0.6, HPF=3.0, fs=None, filter=
     return H
 
 # Simpler Proposed Method (no physiological conditions)
-def softsig_selection(Cn,fs,step=40):
+def softsig_selection(Cn,fs,step=10):
     # R,G,B ... evenly spaced time intervals
     # 格子点の作成
     theta_range = np.linspace(0, np.pi/2, step) # θ_1は[0,π/2]の値をとる
