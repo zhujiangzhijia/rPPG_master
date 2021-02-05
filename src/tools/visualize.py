@@ -64,15 +64,16 @@ def plot_spectrograms(ppg, fs=None, tw=10,title=None):
     plt.ylim(0, 250)
     plt.show()
 
-def plot_BlandAltman(rppg_peak, ref_peak):
+def plot_BlandAltman(ref_rri,est_rri):
     """
     Plot Bland Altman
+    --------------------------
+    ref_rri:refrence rri signals[ms]
+    est_rri:estiomated rri signals[ms]
     """
-    est = 1000*(rppg_peak[1:] -rppg_peak[:-1])
-    ref = 1000*(ref_peak[1:] - ref_peak[:-1])
-    corr = np.corrcoef(est, ref)[0, 1]
-    x = 0.5*(est + ref)
-    y = (est - ref)
+    corr = np.corrcoef(est_rri, ref_rri)[0, 1]
+    x = 0.5*(est_rri + ref_rri)
+    y = (est_rri - ref_rri)
     mae = np.mean(abs(y))
     rmse = np.sqrt(np.mean(y**2))
     sygma = np.std(y)

@@ -34,15 +34,18 @@ rppg_sig = np.loadtxt(r"D:\rPPGDataset\Analysis\luminance\tohma\2020-12-29 16-44
 ref_rpeaks = np.loadtxt(r"D:\rPPGDataset\Analysis\luminance\tohma\2020-12-29 16-44-19.110293 Front 100lux REF RRI.csv",delimiter=",")
 ref_rpeaks *= 1000
 
-# plt.plot(rppg_sig[:,0])
-# plt.show()
-est_rpeaks = RppgPeakDetection(rppg_sig[:,1], fs=30, fr=100, show=True)
-
-r_est_rpeaks,rri = OutlierDetect(est_rpeaks)
-plt.plot(r_est_rpeaks,rri)
-plt.show()
+# RRIの補正
+est_rpeaks = RppgPeakDetection(rppg_sig[:,2], fs=30, fr=100, show=False)
+ref_rri, est_rri, error_rate = Calc_MissPeaks(est_rpeaks, ref_rpeaks)
+# RRIの評価
+snr_result = CalcSNR(rppg_sig[:,1], HR_F=None, fs=30, nfft=512)
+print(snr_result)
+# RRIの精度評価
+result = CalcEvalRRI(ref_rri, est_rri)
+print(result)
 
 exit()
+
 def ALL_Analysis(input_folder, output_folder):
     file_lists = os.listdir(input_folder)
     for i in range(0,len(file_lists)-2,3):

@@ -8,6 +8,8 @@ import matplotlib.pyplot as plt
 from scipy import signal,interpolate
 import pyhrv
 
+
+
 # 一定時間ごとの特徴量を算出し，dataframe型にまとめて返す
 def biosignal_time_summary(rpeaks, duration=300,overlap=150,skip_time=None,outpath=None): 
     # 時間変数を作成
@@ -62,7 +64,7 @@ def CalcSNR(ppg, HR_F=None, fs=30, nfft=512):
     FMask2 = (freq >= 0.5)&(freq <= 4)
     AllPower = np.sum(power[FMask2])
     SNR = 10*np.log10((SPower)**2/(AllPower-SPower)**2)
-    return HR_F, SNR
+    return {"HR":HR_F,"SNR":SNR}
 
 
 def CalcFreqHR(ppg, fs=30, nfft=512):
@@ -99,6 +101,15 @@ def CalcTimeHR(rpeaks, rri, segment=17.06, overlap=None):
     ts = starts + overlap
     return ts, HR_T 
 
+def CalcEvalRRI(ref_rri, est_rri):
+    corr = np.corrcoef(est_rri, ref_rri)[0, 1]
+    x = 0.5*(est_rri + ref_rri)
+    y = (est_rri - ref_rri)
+    mae = np.mean(abs(y))
+    rmse = np.sqrt(np.mean(y**2))
+    result = {"corr":corr,"mae":mae,"rmse":rmse}
+    return result
+
 
 
 def Calc_PSD(rri_peaks, rri=None, nfft=2**8):
@@ -125,7 +136,71 @@ def Calc_PSD(rri_peaks, rri=None, nfft=2**8):
 
 
 
+def Calc_MissPeaks(est_rpeaks=None, 
+                   ref_rpeaks=None,
+                   threshold=0.25):
+    """
+    リファレンスのピークと，推定したピーク値を比較
+    ピーク検出に失敗する割合を算出する
+    ----------
+	ref_rpeaks, est_rpeaks : array
+		R-peak locations in [ms]
+    threshold: float
+        外れ値を検出するレベル．
+        この値が高いほど外れ値と検出されるピークは多くなる
+    ----------
+    threshold level
+    
+    very low : 0.45sec
+    low : 0.35sec
+    medium : 0.25sec
+    strong : 0.15sec
+    very strong : .05sec
+    """
+    
+    # ピーク時間のずれを補正
+    # 最初のピーク位置でECGとPPGの位相遅れに対処する
+    t_first = np.maximum(est_rpeaks[0],ref_rpeaks[0])
+    est_rpeaks = est_rpeaks[(t_first<=est_rpeaks)]
+    ref_rpeaks = ref_rpeaks[(t_first<=ref_rpeaks)]
+    est_rpeaks = est_rpeaks - est_rpeaks[0]
+    ref_rpeaks = ref_rpeaks - ref_rpeaks[0]
 
+    # RRIを取得
+    est_rri = est_rpeaks[1:]-est_rpeaks[:-1]
+    est_rpeaks = est_rpeaks[1:]
+    ref_rri = ref_rpeaks[1:]-ref_rpeaks[:-1]
+    ref_rpeaks = ref_rpeaks[1:]
+    input_peaknum = ref_rri.size
+    print("Input  REF RRI:{}, EST RRI:{}".format(ref_rri.size, est_rri.size))
+
+    if est_rpeaks.size != ref_rpeaks.size:
+        # Estimate peaks内で閾値より大きく外れたデータを削除
+        median_rri = signal.medfilt(est_rri, 5)# median filter
+        detrend_est_rri = est_rri - median_rri
+        index_outlier = np.where(np.abs(detrend_est_rri) > (threshold*1000))[0]
+        print("{} point detected".format(index_outlier.size))
+        if index_outlier.size > 0:
+            flag = np.ones(len(est_rri), dtype=bool)
+            flag[index_outlier.tolist()] = False
+            est_rpeaks = est_rpeaks[flag]
+            est_rri = est_rri[flag]
+            
+            # リファレンスと比較して，大きく外れたデータを検出
+            ref_index = []
+            for i,i_rpeak in enumerate(ref_rpeaks):
+                # リスト要素と対象値の差分を計算し最小値のインデックスを取得
+                idx = np.abs(est_rpeaks-i_rpeak).argmin()
+                if np.abs(est_rpeaks[idx]-i_rpeak) <= (threshold*1000):
+                    ref_index.append(i)
+            ref_rpeaks = ref_rpeaks[ref_index]
+            ref_rri = ref_rri[ref_index]
+            
+    print("Output REF RRI:{}, EST RRI:{}".format(ref_rri.size, est_rri.size))
+    
+    error_rate = (input_peaknum-ref_rri.size)/input_peaknum
+    print("Error Rate: {}%".format(100*error_rate))
+    return ref_rri,est_rri,error_rate
 
 if __name__ == "__main__":
     path = r"D:\rPPGDataset\Analysis\luminance\shizuya\2021-01-05 18-45-41.248194 Front And Celling 700lux rPPG Signals.csv"

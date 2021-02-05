@@ -14,7 +14,7 @@ def RppgPeakDetection(ppg,fs,fr=100, show=False, filter=False, range=0.6):
     rPPG peak検出
     peak時間を返り値とする
     """
-    hr_f,_ = evaluate.CalcSNR(ppg,fs=fs,nfft=512)
+    hr_f = evaluate.CalcSNR(ppg,fs=fs,nfft=512)["HR"]
 
     if filter==True:
         # Moving Average
@@ -52,7 +52,7 @@ def RppgPeakCorrection(RRIpeaks, col=0.80):
         i = i + 1
     return RRIpeaks
 
-def OutlierDetect(rpeaks=None,threshold=0.25):
+def OutlierDetect(rpeaks=None, threshold=0.25):
     """RRI時系列と平均値の差分を算出し，閾値を使って外れ値を取り除く
     Kubiosより参照
     !注意!補間するため，rpeaksからrriは算出できなくなる
