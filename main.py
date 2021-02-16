@@ -23,31 +23,28 @@ from src.tools.peak_detector import *
 from src import preprocessing
 from src.tools.skintrackbar import *
 
-# rpeaks_softsig = np.loadtxt(r"D:\rPPGDataset\Analysis\luminance\tohma\2020-12-29 16-27-46.965417 Front 700lux POS EST RRI.csv")
-# rpeaks_ref = np.loadtxt(r"D:\rPPGDataset\Analysis\luminance\tohma\2020-12-29 16-27-46.965417 Front 700lux REF RRI.csv")
-# plt.plot(rpeaks_softsig[1:],rpeaks_softsig[1:]-rpeaks_softsig[:-1],label="EST")
-# plt.plot(1000*rpeaks_ref[1:],1000*(rpeaks_ref[1:]-rpeaks_ref[:-1]),label="REF")
-# plt.legend()
-# plt.show()
 
-rppg_sig = np.loadtxt(r"D:\rPPGDataset\Analysis\luminance\tohma\2020-12-29 16-44-19.110293 Front 100lux rPPG Signals.csv",delimiter=",")
-ref_rpeaks = np.loadtxt(r"D:\rPPGDataset\Analysis\luminance\tohma\2020-12-29 16-44-19.110293 Front 100lux REF RRI.csv",delimiter=",")
-ref_rpeaks *= 1000
+# rppg_sig = np.loadtxt(r"D:\rPPGDataset\Analysis\luminance\tohma\2020-12-29 16-44-19.110293 Front 100lux rPPG Signals.csv",delimiter=",")
+# ref_rpeaks = np.loadtxt(r"D:\rPPGDataset\Analysis\luminance\tohma\2020-12-29 16-44-19.110293 Front 100lux REF RRI.csv",delimiter=",")
+# ref_rpeaks *= 1000
 
-# RRIの補正
-est_rpeaks = RppgPeakDetection(rppg_sig[:,2], fs=30, fr=100, show=False)
-ref_rri, est_rri, error_rate = Calc_MissPeaks(est_rpeaks, ref_rpeaks)
-# RRIの評価
-snr_result = CalcSNR(rppg_sig[:,1], HR_F=None, fs=30, nfft=512)
-print(snr_result)
-# RRIの精度評価
-result = CalcEvalRRI(ref_rri, est_rri)
-print(result)
+# # RRIの補正
+# est_rpeaks = RppgPeakDetection(rppg_sig[:,2], fs=30, fr=100, show=False)
+# ref_rri, est_rri, error_rate = Calc_MissPeaks(est_rpeaks, ref_rpeaks)
+# # RRIの評価
+# snr_result = CalcSNR(rppg_sig[:,1], HR_F=None, fs=30, nfft=512)
+# print(snr_result)
+# # RRIの精度評価
+# result = CalcEvalRRI(ref_rri, est_rri)
+# print(result)
 
-exit()
+
 
 def ALL_Analysis(input_folder, output_folder):
     file_lists = os.listdir(input_folder)
+    
+    df = None
+
     for i in range(0,len(file_lists)-2,3):
         pathlist = file_lists[i:i+3]
         CamPath = [s for s in pathlist if 'Cam' in s][0]
@@ -55,82 +52,102 @@ def ALL_Analysis(input_folder, output_folder):
         TsPath = [s for s in pathlist if 'timestamp' in s][0]
         split_param = CamPath.split()
         print(split_param)
-
+        
         if any(s.endswith("fps") for s in split_param):
             fps = split_param[3][:-3]
-            action_rppg(input_folder,output_folder,CamPath,ECGPath,TsPath,fps=float(fps))
+            df= action_rppg(df,input_folder,output_folder,CamPath,ECGPath,TsPath,fps=float(fps))
         else:
-            action_rppg(input_folder,output_folder,CamPath,ECGPath,TsPath,fps=30)
+            df= action_rppg(df,input_folder,output_folder,CamPath,ECGPath,TsPath,fps=30)
+        print(df.shape)
+    return df
 
-def action_rppg(indict,outdict,CamPath,ECGPath,TsPath,fps):
+def action_rppg(df,indict,outdict,CamPath,ECGPath,TsPath,fps):
+    segment_bio_report = {}
     c_fps = 100
     sample_rate = 100 # ECGのサンプリングレート
-    cap = cv2.VideoCapture(os.path.join(indict, CamPath))
-    SkinPath = CamPath[:-8]+" SkinPram"+".npy"
-    ret, frame = cap.read()
-    # Import landmark 
-    LAND_PATH = os.path.join(outdict,CamPath[:-4]+".csv")
-    df = pd.read_csv(LAND_PATH, header = 0).rename(columns=lambda x: x.replace(' ', ''))
-    pix_x_frames = df.loc[:, df.columns.str.contains('x_')].values.astype(np.int)
-    pix_y_frames = df.loc[:, df.columns.str.contains('y_')].values.astype(np.int)
-    pix_x = pix_x_frames[0,:].reshape(-1, 1)
-    pix_y = pix_y_frames[0,:].reshape(-1, 1)
-    # FaceMask by features point
-    mask = RoIDetection(frame,pix_x,pix_y)
-    face_img = cv2.bitwise_and(frame, frame, mask=mask)
-    skin_mask = sd.SkinDetectTrack(face_img,os.path.join(outdict,SkinPath))
-    mask = cv2.bitwise_and(mask, skin_mask, skin_mask)
-    mask_img = cv2.bitwise_and(frame, frame, mask=mask)
-    outpath = os.path.join(r"D:\rPPGDataset\Figure\Images\shizuya\luminance\skinmask_GUI",
-                           CamPath[:-4]+".jpg")
-    cv2.imwrite(outpath, mask_img)
 
-    return 0
+    # リファレンスの読み取り
+    ref_rpeaks = np.loadtxt(os.path.join(outdict,CamPath[:-8]+" REF RRI.csv"), delimiter=",")
+    ref_rpeaks *= 1000
 
-    
-    # LAND_PATH = os.path.join(outdict,CamPath[:-4]+".csv")
-    # df = pd.read_csv(LAND_PATH, header = 0).rename(columns=lambda x: x.replace(' ', ''))
-    # SKINPATH = os.path.join(outdict,CamPath[:-8]+" SkinPram"+".npy")
-    # trackbar(df,os.path.join(indict, CamPath),SKINPATH)
-    # return 0
+    # PPGのデータを読み取り
+    rppg_signals = np.loadtxt(os.path.join(outdict,CamPath[:-8]+" rPPG Signals.csv"), delimiter=",")
 
-    #OPEN FACEを実行
+
+    # ピーク値検出の実行
+    est_rpeaks = RppgPeakDetection(rppg_signals[:,0], fs=fps, fr=c_fps, show=True)
+    np.savetxt(os.path.join(outdict,CamPath[:-8]+" POS EST RRI.csv"), est_rpeaks, delimiter=",")
+
+    # HRVの精度検証
+    m_est_rpeaks,m_est_rri = OutlierDetect(est_rpeaks.copy())
+    est_hrv_parameters = Calc_PSD(m_est_rpeaks,m_est_rri, nfft=2**10,keyword="EST_")
+
+    m_ref_rpeaks,m_ref_rri = OutlierDetect(ref_rpeaks.copy())
+    ref_hrv_parameters = Calc_PSD(m_ref_rpeaks,m_ref_rri, nfft=2**10,keyword="REF_")
+
+
+    ref_rri, est_rri, error_rate,flag = Calc_MissPeaks(est_rpeaks.copy(), ref_rpeaks.copy())
+    if ref_rri.size != est_rri.size:
+        print("Error")
+        exit()
+    segment_bio_report = {"Path":CamPath[:-8],"MissRate":error_rate,"Flag":flag}
+
+    # RRIの評価
+    snr_result = CalcSNR(rppg_signals[:,0], HR_F=None, fs=30, nfft=512)
+    segment_bio_report.update(snr_result)
+    # RRIの精度評価
+    result = CalcEvalRRI(ref_rri, est_rri)
+    segment_bio_report.update(result)
+
+    # HRVの合成
+    segment_bio_report.update(est_hrv_parameters)
+    segment_bio_report.update(ref_hrv_parameters)
+     
+    # 初期値　出力
+    if df is None:
+        df = pd.DataFrame([], columns=segment_bio_report.keys())
+    df =  pd.concat([df, pd.DataFrame(segment_bio_report , index=[segment_bio_report.keys()]) ])
+    return df
+    # #OPEN FACEを実行
     # print(os.path.join(indict,CamPath))
     # openface(os.path.join(indict,CamPath), outdict)
 
-    #ROI検出
-    LAND_PATH = os.path.join(outdict,CamPath[:-4]+".csv")
-    df = pd.read_csv(LAND_PATH, header = 0).rename(columns=lambda x: x.replace(' ', ''))
-    SkinPath = CamPath[:-8]+" SkinPram"+".npy"
-    rgb_signal = FaceAreaRoI(df, os.path.join(indict,CamPath),os.path.join(outdict,SkinPath))
-    np.savetxt(os.path.join(outdict,CamPath[:-8]+" RGB Signals.csv"), rgb_signal, delimiter=",")
+    # #ROI検出
+    # LAND_PATH = os.path.join(outdict,CamPath[:-4]+".csv")
+    # df = pd.read_csv(LAND_PATH, header = 0).rename(columns=lambda x: x.replace(' ', ''))
+    # SkinPath = CamPath[:-8]+" SkinPram"+".npy"
+    # rgb_signal = FaceAreaRoI(df, os.path.join(indict,CamPath),os.path.join(outdict,SkinPath))
+    # np.savetxt(os.path.join(outdict,CamPath[:-8]+" RGB Signals.csv"), rgb_signal, delimiter=",")
 
-    # 信号の目的のレートへのリサンプリング
-    data_time = np.loadtxt(os.path.join(indict,TsPath),delimiter=",")
-    rgb_signal = preprocessing.rgb_resample(rgb_signal,data_time,fs=fps)
-    # RPPG
-    rppg_pos = POSMethod(rgb_signal, fs=fps ,filter=True).reshape(-1,1)
-    rppg_green = GreenMethod(rgb_signal, fs=fps).reshape(-1,1)
-    rppg_softsig = SoftsigMethod(rgb_signal, fs=fps).reshape(-1,1)
-    rppg_signals = np.concatenate([rppg_pos,rppg_green,rppg_softsig],axis=1)
-    np.savetxt(os.path.join(outdict,CamPath[:-8]+" rPPG Signals.csv"), rppg_signals, delimiter=",")
+    # # 信号の目的のレートへのリサンプリング
+    # data_time = np.loadtxt(os.path.join(indict,TsPath),delimiter=",")
+    # rgb_signal = preprocessing.rgb_resample(rgb_signal,data_time,fs=fps)
+    # # RPPG
+    # rppg_pos = POSMethod(rgb_signal, fs=fps ,filter=True).reshape(-1,1)
+    # rppg_green = GreenMethod(rgb_signal, fs=fps).reshape(-1,1)
+    # rppg_softsig = SoftsigMethod(rgb_signal, fs=fps).reshape(-1,1)
+    # rppg_signals = np.concatenate([rppg_pos,rppg_green,rppg_softsig],axis=1)
+    # np.savetxt(os.path.join(outdict,CamPath[:-8]+" rPPG Signals.csv"), rppg_signals, delimiter=",")
 
-    # Peakの出力
-    est_rpeaks = RppgPeakDetection(rppg_signals[:,0], fs=fps, fr=c_fps, show=False)
-    np.savetxt(os.path.join(outdict,CamPath[:-8]+" POS EST RRI.csv"), est_rpeaks, delimiter=",")
-    est_rpeaks = RppgPeakDetection(rppg_signals[:,1], fs=fps, fr=c_fps, show=False)
-    np.savetxt(os.path.join(outdict,CamPath[:-8]+" Green EST RRI.csv"), est_rpeaks, delimiter=",")
-    est_rpeaks = RppgPeakDetection(rppg_signals[:,2], fs=fps, fr=c_fps, show=False)
-    np.savetxt(os.path.join(outdict,CamPath[:-8]+" Softsig EST RRI.csv"), est_rpeaks, delimiter=",")
+    # # Peakの出力
+    # est_rpeaks = RppgPeakDetection(rppg_signals[:,0], fs=fps, fr=c_fps, show=False)
+    # np.savetxt(os.path.join(outdict,CamPath[:-8]+" POS EST RRI.csv"), est_rpeaks, delimiter=",")
+    # est_rpeaks = RppgPeakDetection(rppg_signals[:,1], fs=fps, fr=c_fps, show=False)
+    # np.savetxt(os.path.join(outdict,CamPath[:-8]+" Green EST RRI.csv"), est_rpeaks, delimiter=",")
+    # est_rpeaks = RppgPeakDetection(rppg_signals[:,2], fs=fps, fr=c_fps, show=False)
+    # np.savetxt(os.path.join(outdict,CamPath[:-8]+" Softsig EST RRI.csv"), est_rpeaks, delimiter=",")
 
-    # リファレンスのピーク出力
-    ref_signal = np.loadtxt(os.path.join(indict,ECGPath))
-    ref_rpeaks = signals.ecg.ecg(ref_signal, sampling_rate=sample_rate, show=False)[-2]
-    np.savetxt(os.path.join(outdict,CamPath[:-8]+" REF RRI.csv"), ref_rpeaks, delimiter=",")
+    # # リファレンスのピーク出力
+    # ref_signal = np.loadtxt(os.path.join(indict,ECGPath))
+    # ref_rpeaks = signals.ecg.ecg(ref_signal, sampling_rate=sample_rate, show=False)[-2]
+    # np.savetxt(os.path.join(outdict,CamPath[:-8]+" REF RRI.csv"), ref_rpeaks, delimiter=",")
 
-infolder = r"D:\rPPGDataset\Log\luminance\shizuya"
-outfolder = r"D:\rPPGDataset\Analysis\luminance\shizuya"
-ALL_Analysis(infolder,outfolder)
+infolder = r"D:\rPPGDataset\Log\framerate\tozyo"
+outfolder = r"D:\rPPGDataset\Analysis\framerate\tozyo"
+df = ALL_Analysis(infolder,outfolder)
+df.to_excel(r"D:\rPPGDataset\Evaluation\framerate_tozyo_pos.xlsx",index=False)
+
+
 # infolder = r"D:\rPPGDataset\Log\framerate\tozyo"
 # outfolder = r"D:\rPPGDataset\Analysis\framerate\tozyo"
 # ALL_Analysis(infolder,outfolder)

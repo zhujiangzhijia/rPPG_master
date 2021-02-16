@@ -101,6 +101,7 @@ def CalcTimeHR(rpeaks, rri, segment=17.06, overlap=None):
     ts = starts + overlap
     return ts, HR_T 
 
+
 def CalcEvalRRI(ref_rri, est_rri):
     corr = np.corrcoef(est_rri, ref_rri)[0, 1]
     x = 0.5*(est_rri + ref_rri)
@@ -112,16 +113,15 @@ def CalcEvalRRI(ref_rri, est_rri):
 
 
 
-def Calc_PSD(rri_peaks, rri=None, nfft=2**8):
+def Calc_PSD(rri_peaks=None, rri=None, nfft=2**8,keyword=""):
     """
     PSDを出力
-    rri_peaks [s]
+    rri_peaks [ms]
     """
+    rri_peaks *= 0.001
+    rri *= 0.001
     sample_rate = 4
-    if rri is None:
-        rri = np.diff(rri_peaks)
-        rri_peaks = rri_peaks[1:] - rri_peaks[1]
-
+    
     # 3次のスプライン補間
     rri_spline = interpolate.interp1d(rri_peaks, rri, 'cubic')
     t_interpol = np.arange(rri_peaks[0], rri_peaks[-1], 1./sample_rate)
@@ -129,10 +129,15 @@ def Calc_PSD(rri_peaks, rri=None, nfft=2**8):
     frequencies, powers  = signal.welch(x=rri_interpol, fs=sample_rate, window='hamming',
                                         detrend="constant",	nperseg=len(rri_interpol),
                                         nfft=len(rri_interpol), scaling='density')
-    LF = np.sum(powers[(frequencies>=0.05) & (frequencies<0.15)]) * 0.10
-    HF = np.sum(powers[(frequencies>0.15) & (frequencies<=0.40)]) * 0.25
+    freqdf = (frequencies[1] - frequencies[0])# Compute frequency resolution
+    LF = np.sum(powers[(frequencies>=0.05) & (frequencies<0.15)]) * freqdf
+    HF = np.sum(powers[(frequencies>0.15) & (frequencies<=0.40)]) * freqdf
+    VLF = np.sum(powers[(frequencies>0.0033) & (frequencies<=0.05)]) * freqdf
     print("Result :LF={:2f}, HF={:2f}, LF/HF={:2f}".format(LF, HF, LF/HF))
-    return {"LF_abs":LF,"HF_abs":HF,"LFHFratio":LF/HF}
+    return {f'{keyword}VLF_abs':VLF,
+            f'{keyword}LF_abs':LF,
+            f'{keyword}HF_abs':HF,
+            f'{keyword}LFHFratio':LF/HF}
 
 
 
@@ -157,7 +162,7 @@ def Calc_MissPeaks(est_rpeaks=None,
     strong : 0.15sec
     very strong : .05sec
     """
-    
+    error_flag=0
     # ピーク時間のずれを補正
     # 最初のピーク位置でECGとPPGの位相遅れに対処する
     t_first = np.maximum(est_rpeaks[0],ref_rpeaks[0])
@@ -165,6 +170,7 @@ def Calc_MissPeaks(est_rpeaks=None,
     ref_rpeaks = ref_rpeaks[(t_first<=ref_rpeaks)]
     est_rpeaks = est_rpeaks - est_rpeaks[0]
     ref_rpeaks = ref_rpeaks - ref_rpeaks[0]
+
 
     # RRIを取得
     est_rri = est_rpeaks[1:]-est_rpeaks[:-1]
@@ -191,16 +197,26 @@ def Calc_MissPeaks(est_rpeaks=None,
             for i,i_rpeak in enumerate(ref_rpeaks):
                 # リスト要素と対象値の差分を計算し最小値のインデックスを取得
                 idx = np.abs(est_rpeaks-i_rpeak).argmin()
-                if np.abs(est_rpeaks[idx]-i_rpeak) <= (threshold*1000):
+                if np.abs(est_rpeaks[idx]-i_rpeak) <= (0.50*1000):
                     ref_index.append(i)
             ref_rpeaks = ref_rpeaks[ref_index]
             ref_rri = ref_rri[ref_index]
+        
+        # さらにrpeaksの数が合わない場合
+        if ref_rri.size != est_rri.size:
+            # 最後の配列を削除する
+            # なぜ合わないかは不明
+            length = min(ref_rri.size,est_rri.size)
+            ref_rri = ref_rri[:int(length)]
+            est_rri = est_rri[:int(length)]
+            error_flag = True
+
             
     print("Output REF RRI:{}, EST RRI:{}".format(ref_rri.size, est_rri.size))
     
     error_rate = (input_peaknum-ref_rri.size)/input_peaknum
     print("Error Rate: {}%".format(100*error_rate))
-    return ref_rri,est_rri,error_rate
+    return ref_rri,est_rri,error_rate,error_flag
 
 if __name__ == "__main__":
     path = r"D:\rPPGDataset\Analysis\luminance\shizuya\2021-01-05 18-45-41.248194 Front And Celling 700lux rPPG Signals.csv"

@@ -113,11 +113,13 @@ def plot_rri(ref_ppg,filter_rppg, nonfilter_rppg):
     plt.legend()
     plt.show()
 
-def plot_PSD(rri_peaks, rri=None, label=None,nfft=2**9):
+def plot_PSD(rri_peaks=None, rri=None, label=None,nfft=2**9):
     """
     PSDを出力
-    rri_peaks [s]
+    rri_peaks [ms]
     """
+    rri_peaks *= 0.001
+    rri *= 0.001
     sample_rate = 4
     if rri is None:
         rri = np.diff(rri_peaks)

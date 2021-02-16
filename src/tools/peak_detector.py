@@ -9,13 +9,14 @@ from ..tools import evaluate
 import matplotlib.pyplot as plt
 
 
-def RppgPeakDetection(ppg,fs,fr=100, show=False, filter=False, range=0.6):
+def RppgPeakDetection(ppg,fs,fr=100, show=False, filter=False, range=0.5):
     """
     rPPG peak検出
     peak時間を返り値とする
     """
     hr_f = evaluate.CalcSNR(ppg,fs=fs,nfft=512)["HR"]
-
+    # hr_f = 1.0
+    print(hr_f)
     if filter==True:
         # Moving Average
         ppg =  preprocessing.ButterFilter(ppg, 0.7, 2.5, fs)    
