@@ -56,6 +56,7 @@ import pandas as pd
 def ALL_Analysis(input_folder, output_folder):
     file_lists = os.listdir(input_folder)
     df = None
+    n = 0
     for i in range(0,len(file_lists)-2,3):
         pathlist = file_lists[i:i+3]
         CamPath = [s for s in pathlist if 'Cam' in s][0]
@@ -63,15 +64,18 @@ def ALL_Analysis(input_folder, output_folder):
         TsPath = [s for s in pathlist if 'timestamp' in s][0]
         split_param = CamPath.split()
         print(split_param)
+        
         if any(s.endswith("fps") for s in split_param):
             fps = split_param[3][:-3]
-            df= action_rppg(df,input_folder,output_folder,CamPath,ECGPath,TsPath,fps=float(fps))
+            df= action_rppg(df,input_folder,output_folder,CamPath,ECGPath,TsPath,fps=float(fps),n=n)
         else:
-            df= action_rppg(df,input_folder,output_folder,CamPath,ECGPath,TsPath,fps=30)
+            df= action_rppg(df,input_folder,output_folder,CamPath,ECGPath,TsPath,fps=30,n=n)
         print(df.shape)
+        n += 1
     return df
 
-def action_rppg(df,indict,outdict,CamPath,ECGPath,TsPath,fps):
+
+def action_rppg(df,indict,outdict,CamPath,ECGPath,TsPath,fps,n):
 
 
     segment_bio_report = {}
@@ -129,7 +133,8 @@ def action_rppg(df,indict,outdict,CamPath,ECGPath,TsPath,fps):
     ts,hr,snr = CalcFreqHR(rppg_signals[:,0],fs=fps,segment=10, overlap=10)
 
     # ピーク値検出の実行
-    est_rpeaks = RppgPeakDetection(rppg_signals[:,0], fs=fps, fr=c_fps, show=True)
+    range_list = [0.6,0.9,0.99]
+    est_rpeaks = RppgPeakDetection(rppg_signals[:,0], fs=fps, fr=c_fps, show=False,range=range_list[n])
     np.savetxt(os.path.join(outdict,CamPath[:-8]+" POS EST RRI.csv"), est_rpeaks, delimiter=",")
 
     # HRVの精度検証
@@ -138,22 +143,26 @@ def action_rppg(df,indict,outdict,CamPath,ECGPath,TsPath,fps):
     m_est_rpeaks,m_est_rri = OutlierDetect(est_rpeaks.copy())
     est_hrv_parameters = Calc_PSD(m_est_rpeaks,m_est_rri, nfft=2**10,keyword="EST_")
 
+
     hrv_time_paramters = {}
 
-    # #HRVの時間変化
-    # df_ref = CalcHRV_Time(m_ref_rpeaks*1000,m_ref_rri*1000,duration=120,overlap=30)
-    # df_est = CalcHRV_Time(m_est_rpeaks*1000,m_est_rri*1000,duration=120,overlap=30)
+    #HRVの時間変化
+    df_ref = CalcHRV_Time(m_ref_rpeaks*1000,m_ref_rri*1000,duration=120,overlap=30)
+    df_est = CalcHRV_Time(m_est_rpeaks*1000,m_est_rri*1000,duration=120,overlap=30)
 
-    # LF_abs_corr = np.corrcoef(df_ref["LF_ABS"],df_est["LF_ABS"])[0, 1]
-    # LF_abs_mae = np.mean(abs(df_ref["LF_ABS"]-df_est["LF_ABS"]))
-    # HF_abs_corr = np.corrcoef(df_ref["HF_ABS"],df_est["HF_ABS"])[0, 1]
-    # HF_abs_mae = np.mean(abs(df_ref["HF_ABS"]-df_est["HF_ABS"]))
-    # LFHFRatio_corr = np.corrcoef(df_ref["LFHFratio"],df_est["LFHFratio"])[0, 1]
-    # LFHFRatio_mae = np.mean(abs(df_ref["LFHFratio"]-df_est["LFHFratio"]))
-    # hrv_time_paramters = {"LF_MAE":LF_abs_mae,"LF_CORR":LF_abs_corr,
-    #                       "HF_MAE":HF_abs_mae,"HF_CORR":HF_abs_corr,
-    #                       "LFHF_MAE":LFHFRatio_mae,"LFHF_CORR":LFHFRatio_corr}
-
+    LF_abs_corr = np.corrcoef(df_ref["LF_ABS"],df_est["LF_ABS"])[0, 1]
+    LF_abs_mae = np.mean(abs(df_ref["LF_ABS"]-df_est["LF_ABS"]))
+    LF_abs_relerr = np.mean(abs(df_ref["LF_ABS"]-df_est["LF_ABS"])/df_ref["LF_ABS"])
+    HF_abs_corr = np.corrcoef(df_ref["HF_ABS"],df_est["HF_ABS"])[0, 1]
+    HF_abs_mae = np.mean(abs(df_ref["HF_ABS"]-df_est["HF_ABS"]))
+    HF_abs_relerr = np.mean(abs(df_ref["HF_ABS"]-df_est["HF_ABS"])/df_ref["HF_ABS"])
+    LFHFRatio_corr = np.corrcoef(df_ref["LFHFratio"],df_est["LFHFratio"])[0, 1]
+    LFHFRatio_mae = np.mean(abs(df_ref["LFHFratio"]-df_est["LFHFratio"]))
+    LFHFratio_relerr = np.mean(abs(df_ref["LFHFratio"]-df_est["LFHFratio"])/df_ref["LFHFratio"])
+    hrv_time_paramters = {"LF_MAE":LF_abs_mae,"LF_CORR":LF_abs_corr,"LF_RelErr":LF_abs_relerr,
+                          "HF_MAE":HF_abs_mae,"HF_CORR":HF_abs_corr,"HF_RelErr":HF_abs_relerr,
+                          "LFHF_MAE":LFHFRatio_mae,"LFHF_CORR":LFHFRatio_corr,"LFHF_RelErr":LFHFratio_relerr}
+    # plt.gca().clear()
     # エラーレート
     ref_rri, est_rri, error_rate,flag = Calc_MissPeaks(est_rpeaks.copy(), ref_rpeaks.copy())
     if ref_rri.size != est_rri.size:
@@ -172,7 +181,7 @@ def action_rppg(df,indict,outdict,CamPath,ECGPath,TsPath,fps):
     # HRVの合成
     segment_bio_report.update(est_hrv_parameters)
     segment_bio_report.update(ref_hrv_parameters)
-    # segment_bio_report.update(hrv_time_paramters)
+    segment_bio_report.update(hrv_time_paramters)
 
     # 初期値　出力
     if df is None:
@@ -182,26 +191,30 @@ def action_rppg(df,indict,outdict,CamPath,ECGPath,TsPath,fps):
 
 
 
-indict = r"D:\rPPGDataset\Log\luminance\shizuya"
-outdict = r"D:\rPPGDataset\Analysis\luminance\shizuya"
+# indict = r"D:\rPPGDataset\Log\luminance\shizuya"
+# outdict = r"D:\rPPGDataset\Analysis\luminance\shizuya"
 
-CamPath = "2021-01-05 18-29-48.052517 Front And Celling 100lux Cam.avi"
-ECGPath = "2021-01-05 18-29-48.052517 Front And Celling 100lux ECG.csv"
-TsPath = "2021-01-05 18-29-48.052517 Front And Celling 100lux timestamp.csv"
+# CamPath = "2021-01-05 18-29-48.052517 Front And Celling 100lux Cam.avi"
+# ECGPath = "2021-01-05 18-29-48.052517 Front And Celling 100lux ECG.csv"
+# TsPath = "2021-01-05 18-29-48.052517 Front And Celling 100lux timestamp.csv"
 
-# df = ALL_Analysis(infolder, outfolder)
-df = None
-df = action_rppg(df,indict,outdict,CamPath,ECGPath,TsPath,fps=30)
-df.to_excel(r"D:\rPPGDataset\Evaluation\2021-01-05 18-41-18.142672 Front And Celling.xlsx", index=False)
-exit()
+# # df = ALL_Analysis(infolder, outfolder)
+# df = None
+# df = action_rppg(df,indict,outdict,CamPath,ECGPath,TsPath,fps=30)
+# df.to_excel(r"D:\rPPGDataset\Evaluation\2021-01-05 18-41-18.142672 Front And Celling.xlsx", index=False)
+# exit()
 
-# infolder = r"D:\rPPGDataset\Log\framerate\tozyo"
-# outfolder = r"D:\rPPGDataset\Analysis\framerate\tozyo"
-# ALL_Analysis(infolder,outfolder)
-# infolder = r"D:\rPPGDataset\Log\motion\tozyo"
-# outfolder = r"D:\rPPGDataset\Analysis\motion\tozyo"
-# ALL_Analysis(infolder,outfolder)
+# infolder = r"D:\rPPGDataset\Log\framerate_2\tozyo"
+# outfolder = r"D:\rPPGDataset\Analysis\framerate_2\tozyo"
+# ALL_Analysis(infolder,outfolder).to_excel(r"D:\rPPGDataset\Evaluate\framerate_2_tozyo.xlsx")
 
+# infolder = r"D:\rPPGDataset\Log\framerate_2\tohma"
+# outfolder = r"D:\rPPGDataset\Analysis\framerate_2\tohma"
+# ALL_Analysis(infolder,outfolder).to_excel(r"D:\rPPGDataset\Evaluate\framerate_2_tohma.xlsx")
+
+infolder = r"D:\rPPGDataset\Log\framerate_2\shizuya"
+outfolder = r"D:\rPPGDataset\Analysis\framerate_2\shizuya"
+ALL_Analysis(infolder,outfolder).to_excel(r"D:\rPPGDataset\Evaluate\framerate_2_shizuya.xlsx")
 # # 信号の目的のレートへのリサンプリング
 # rgb_signal = np.loadtxt(r"C:\Users\akito\Desktop\Hassylab\projects\RPPG\tokyo_ikadaigaku\2021-02-17\data\Analysis\2021-02-17 22-02-01.204245 test RGB Signals.csv",
 #                         delimiter=",")
@@ -240,17 +253,7 @@ exit()
 # plt.show()
 
 
-
-#reference
-peaks_ppg = np.loadtxt(r"C:\Users\akito\Desktop\Hassylab\projects\RPPG\Ikadai\2020-11-24\rpeaks_cest.csv",delimiter=",")
-peaks_ref = np.loadtxt(r"C:\Users\akito\Desktop\Hassylab\projects\RPPG\Ikadai\2020-11-24\rpeaks_cref.csv",delimiter=",")
-
-print(len(peaks_ref))
-print(len(peaks_ppg))
-rri_ref = peaks_ref[1:]-peaks_ref[:-1]
-rri_est = peaks_ppg[1:]-peaks_ppg[:-1]
-# plt.scatter(rri_ref[:-2],rri_est[1:])
-print(np.corrcoef(rri_ref,rri_est))
+exit()
 
 # plt.plot(peaks_ref[1:]/60000,peaks_ref[1:]-peaks_ref[:-1],label="Reference")
 # plt.plot(peaks_ppg[1:]/60000,peaks_ppg[1:]-peaks_ppg[:-1],label="Estimation")
