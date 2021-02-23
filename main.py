@@ -39,12 +39,23 @@ from src.tools.skintrackbar import *
 # print(result)
 
 
+import seaborn as sns
+import pandas as pd
+
+# df = pd.read_excel(r"D:\rPPGDataset\Evaluation\結果まとめ.xlsx",header=0,sheet_name="Framerate")
+# print(df.columns)
+# sns.set(style="whitegrid") 
+# # df=df.query("Subject=='Tozyo'")
+# # Draw a nested barplot to show survival for class and sex
+# g = sns.catplot(x="Framerate", y="LFHF_CORR", data=df,
+#                 height=6, kind= "point")
+# g.despine(left=True)
+# plt.show()
+# exit()
 
 def ALL_Analysis(input_folder, output_folder):
     file_lists = os.listdir(input_folder)
-    
     df = None
-
     for i in range(0,len(file_lists)-2,3):
         pathlist = file_lists[i:i+3]
         CamPath = [s for s in pathlist if 'Cam' in s][0]
@@ -52,7 +63,6 @@ def ALL_Analysis(input_folder, output_folder):
         TsPath = [s for s in pathlist if 'timestamp' in s][0]
         split_param = CamPath.split()
         print(split_param)
-        
         if any(s.endswith("fps") for s in split_param):
             fps = split_param[3][:-3]
             df= action_rppg(df,input_folder,output_folder,CamPath,ECGPath,TsPath,fps=float(fps))
@@ -62,52 +72,13 @@ def ALL_Analysis(input_folder, output_folder):
     return df
 
 def action_rppg(df,indict,outdict,CamPath,ECGPath,TsPath,fps):
+
+
     segment_bio_report = {}
     c_fps = 100
     sample_rate = 100 # ECGのサンプリングレート
 
-    # リファレンスの読み取り
-    ref_rpeaks = np.loadtxt(os.path.join(outdict,CamPath[:-8]+" REF RRI.csv"), delimiter=",")
-    ref_rpeaks *= 1000
 
-    # PPGのデータを読み取り
-    rppg_signals = np.loadtxt(os.path.join(outdict,CamPath[:-8]+" rPPG Signals.csv"), delimiter=",")
-
-
-    # ピーク値検出の実行
-    est_rpeaks = RppgPeakDetection(rppg_signals[:,0], fs=fps, fr=c_fps, show=True)
-    np.savetxt(os.path.join(outdict,CamPath[:-8]+" POS EST RRI.csv"), est_rpeaks, delimiter=",")
-
-    # HRVの精度検証
-    m_est_rpeaks,m_est_rri = OutlierDetect(est_rpeaks.copy())
-    est_hrv_parameters = Calc_PSD(m_est_rpeaks,m_est_rri, nfft=2**10,keyword="EST_")
-
-    m_ref_rpeaks,m_ref_rri = OutlierDetect(ref_rpeaks.copy())
-    ref_hrv_parameters = Calc_PSD(m_ref_rpeaks,m_ref_rri, nfft=2**10,keyword="REF_")
-
-
-    ref_rri, est_rri, error_rate,flag = Calc_MissPeaks(est_rpeaks.copy(), ref_rpeaks.copy())
-    if ref_rri.size != est_rri.size:
-        print("Error")
-        exit()
-    segment_bio_report = {"Path":CamPath[:-8],"MissRate":error_rate,"Flag":flag}
-
-    # RRIの評価
-    snr_result = CalcSNR(rppg_signals[:,0], HR_F=None, fs=30, nfft=512)
-    segment_bio_report.update(snr_result)
-    # RRIの精度評価
-    result = CalcEvalRRI(ref_rri, est_rri)
-    segment_bio_report.update(result)
-
-    # HRVの合成
-    segment_bio_report.update(est_hrv_parameters)
-    segment_bio_report.update(ref_hrv_parameters)
-     
-    # 初期値　出力
-    if df is None:
-        df = pd.DataFrame([], columns=segment_bio_report.keys())
-    df =  pd.concat([df, pd.DataFrame(segment_bio_report , index=[segment_bio_report.keys()]) ])
-    return df
     # #OPEN FACEを実行
     # print(os.path.join(indict,CamPath))
     # openface(os.path.join(indict,CamPath), outdict)
@@ -116,8 +87,9 @@ def action_rppg(df,indict,outdict,CamPath,ECGPath,TsPath,fps):
     # LAND_PATH = os.path.join(outdict,CamPath[:-4]+".csv")
     # df = pd.read_csv(LAND_PATH, header = 0).rename(columns=lambda x: x.replace(' ', ''))
     # SkinPath = CamPath[:-8]+" SkinPram"+".npy"
-    # rgb_signal = FaceAreaRoI(df, os.path.join(indict,CamPath),os.path.join(outdict,SkinPath))
-    # np.savetxt(os.path.join(outdict,CamPath[:-8]+" RGB Signals.csv"), rgb_signal, delimiter=",")
+    # trackbar(df,os.path.join(indict,CamPath),os.path.join(outdict,SkinPath))
+    # rgb_signal = FaceAreaRoI(df, os.path.join(indict,CamPath),os.path.join(outdict,SkinPath),show=True)
+    # # np.savetxt(os.path.join(outdict,CamPath[:-8]+" RGB Signals.csv"), rgb_signal, delimiter=",")
 
     # # 信号の目的のレートへのリサンプリング
     # data_time = np.loadtxt(os.path.join(indict,TsPath),delimiter=",")
@@ -142,11 +114,86 @@ def action_rppg(df,indict,outdict,CamPath,ECGPath,TsPath,fps):
     # ref_rpeaks = signals.ecg.ecg(ref_signal, sampling_rate=sample_rate, show=False)[-2]
     # np.savetxt(os.path.join(outdict,CamPath[:-8]+" REF RRI.csv"), ref_rpeaks, delimiter=",")
 
-infolder = r"D:\rPPGDataset\Log\framerate\tozyo"
-outfolder = r"D:\rPPGDataset\Analysis\framerate\tozyo"
-df = ALL_Analysis(infolder,outfolder)
-df.to_excel(r"D:\rPPGDataset\Evaluation\framerate_tozyo_pos.xlsx",index=False)
 
+    # ######################
+    # # ここを書き換える
+    # ######################
+    # return 0
+
+    # リファレンスの読み取り
+    ref_rpeaks = np.loadtxt(os.path.join(outdict,CamPath[:-8]+" REF RRI.csv"), delimiter=",")
+    ref_rpeaks *= 1000
+
+    # PPGのデータを読み取り
+    rppg_signals = np.loadtxt(os.path.join(outdict,CamPath[:-8]+" rPPG Signals.csv"), delimiter=",")
+    ts,hr,snr = CalcFreqHR(rppg_signals[:,0],fs=fps,segment=10, overlap=10)
+
+    # ピーク値検出の実行
+    est_rpeaks = RppgPeakDetection(rppg_signals[:,0], fs=fps, fr=c_fps, show=True)
+    np.savetxt(os.path.join(outdict,CamPath[:-8]+" POS EST RRI.csv"), est_rpeaks, delimiter=",")
+
+    # HRVの精度検証
+    m_ref_rpeaks,m_ref_rri = OutlierDetect(ref_rpeaks.copy())
+    ref_hrv_parameters = Calc_PSD(m_ref_rpeaks,m_ref_rri, nfft=2**10,keyword="REF_")
+    m_est_rpeaks,m_est_rri = OutlierDetect(est_rpeaks.copy())
+    est_hrv_parameters = Calc_PSD(m_est_rpeaks,m_est_rri, nfft=2**10,keyword="EST_")
+
+    hrv_time_paramters = {}
+
+    # #HRVの時間変化
+    # df_ref = CalcHRV_Time(m_ref_rpeaks*1000,m_ref_rri*1000,duration=120,overlap=30)
+    # df_est = CalcHRV_Time(m_est_rpeaks*1000,m_est_rri*1000,duration=120,overlap=30)
+
+    # LF_abs_corr = np.corrcoef(df_ref["LF_ABS"],df_est["LF_ABS"])[0, 1]
+    # LF_abs_mae = np.mean(abs(df_ref["LF_ABS"]-df_est["LF_ABS"]))
+    # HF_abs_corr = np.corrcoef(df_ref["HF_ABS"],df_est["HF_ABS"])[0, 1]
+    # HF_abs_mae = np.mean(abs(df_ref["HF_ABS"]-df_est["HF_ABS"]))
+    # LFHFRatio_corr = np.corrcoef(df_ref["LFHFratio"],df_est["LFHFratio"])[0, 1]
+    # LFHFRatio_mae = np.mean(abs(df_ref["LFHFratio"]-df_est["LFHFratio"]))
+    # hrv_time_paramters = {"LF_MAE":LF_abs_mae,"LF_CORR":LF_abs_corr,
+    #                       "HF_MAE":HF_abs_mae,"HF_CORR":HF_abs_corr,
+    #                       "LFHF_MAE":LFHFRatio_mae,"LFHF_CORR":LFHFRatio_corr}
+
+    # エラーレート
+    ref_rri, est_rri, error_rate,flag = Calc_MissPeaks(est_rpeaks.copy(), ref_rpeaks.copy())
+    if ref_rri.size != est_rri.size:
+        print("Error")
+        exit()
+    segment_bio_report = {"Path":CamPath[:-8],"MissRate":error_rate,"Flag":flag,
+                          "SNR_MEAN":np.mean(snr),"SNR_STD":np.std(snr)}
+
+    # RRIの評価
+    snr_result = CalcSNR(rppg_signals[:,0], HR_F=None, fs=fps, nfft=512)
+    segment_bio_report.update(snr_result)
+    # RRIの精度評価
+    result = CalcEvalRRI(ref_rri, est_rri)
+    segment_bio_report.update(result)
+
+    # HRVの合成
+    segment_bio_report.update(est_hrv_parameters)
+    segment_bio_report.update(ref_hrv_parameters)
+    # segment_bio_report.update(hrv_time_paramters)
+
+    # 初期値　出力
+    if df is None:
+        df = pd.DataFrame([], columns=segment_bio_report.keys())
+    df =  pd.concat([df, pd.DataFrame(segment_bio_report , index=[segment_bio_report.keys()]) ])
+    return df
+
+
+
+indict = r"D:\rPPGDataset\Log\luminance\shizuya"
+outdict = r"D:\rPPGDataset\Analysis\luminance\shizuya"
+
+CamPath = "2021-01-05 18-29-48.052517 Front And Celling 100lux Cam.avi"
+ECGPath = "2021-01-05 18-29-48.052517 Front And Celling 100lux ECG.csv"
+TsPath = "2021-01-05 18-29-48.052517 Front And Celling 100lux timestamp.csv"
+
+# df = ALL_Analysis(infolder, outfolder)
+df = None
+df = action_rppg(df,indict,outdict,CamPath,ECGPath,TsPath,fps=30)
+df.to_excel(r"D:\rPPGDataset\Evaluation\2021-01-05 18-41-18.142672 Front And Celling.xlsx", index=False)
+exit()
 
 # infolder = r"D:\rPPGDataset\Log\framerate\tozyo"
 # outfolder = r"D:\rPPGDataset\Analysis\framerate\tozyo"
@@ -155,8 +202,27 @@ df.to_excel(r"D:\rPPGDataset\Evaluation\framerate_tozyo_pos.xlsx",index=False)
 # outfolder = r"D:\rPPGDataset\Analysis\motion\tozyo"
 # ALL_Analysis(infolder,outfolder)
 
+# # 信号の目的のレートへのリサンプリング
+# rgb_signal = np.loadtxt(r"C:\Users\akito\Desktop\Hassylab\projects\RPPG\tokyo_ikadaigaku\2021-02-17\data\Analysis\2021-02-17 22-02-01.204245 test RGB Signals.csv",
+#                         delimiter=",")
+# data_time = np.loadtxt(r"C:\Users\akito\Desktop\Hassylab\projects\RPPG\tokyo_ikadaigaku\2021-02-17\data\2021-02-17 22-02-01.204245 test timestamp.csv"
+#                         ,delimiter=",")
+# fps = int(np.mean(1/np.diff(data_time)))
+# print(fps)
+# rgb_signal = preprocessing.rgb_resample(rgb_signal,data_time,fs=fps)
+# # RPPG
+# rppg_pos = POSMethod(rgb_signal, fs=fps ,filter=False).reshape(-1,1)
+# rppg_green = GreenMethod(rgb_signal, fs=fps).reshape(-1,1)
+# # rppg_softsig = SoftsigMethod(rgb_signal, fs=fps).reshape(-1,1)
+# rppg_signals = np.concatenate([rppg_pos,rppg_green],axis=1)
 
-exit()
+# est_rpeaks = RppgPeakDetection(rppg_green, fs=fps, fr=100, show=True)
+
+# plt.plot(rppg_green)
+# plt.show()
+
+
+# exit()
 
 
 

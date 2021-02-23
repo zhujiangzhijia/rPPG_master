@@ -39,15 +39,15 @@ def plot_snr(ppg, hr=None, fs=30,text=None):
     SNR = 10*np.log10((SPower)**2/(AllPower-SPower)**2)
     # normalize
     power_norm = (power-np.min(power))/(np.max(power)-np.min(power))
-    #plt.figure()
+    plt.figure()
     plt.plot(freq*60, power_norm,label=text)
-    # plt.axvspan(60*(HR_F-0.1), 60*(HR_F+0.1), color = "coral", alpha=0.2)
-    # plt.axvspan(60*(2*HR_F-0.2), 60*(2*HR_F+0.2), color = "coral", alpha=0.2)
+    plt.axvspan(60*(HR_F-0.1), 60*(HR_F+0.1), color = "coral", alpha=0.2)
+    plt.axvspan(60*(2*HR_F-0.2), 60*(2*HR_F+0.2), color = "coral", alpha=0.2)
     plt.xlabel("Frequency [bpm]")
     plt.ylabel("Normalized Amplitude [-]")
     plt.xlim(0, 250)
     print(HR_F, SNR)
-    #plt.title("freq HR: {:.2f}  SNR: {:.2f}".format(HR_F, SNR))
+    plt.title("freq HR: {:.2f}  SNR: {:.2f}".format(HR_F, SNR))
 
 def plot_spectrograms(ppg, fs=None, tw=10,title=None):
     """

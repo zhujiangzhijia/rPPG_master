@@ -9,14 +9,13 @@ from ..tools import evaluate
 import matplotlib.pyplot as plt
 
 
-def RppgPeakDetection(ppg,fs,fr=100, show=False, filter=False, range=0.5):
+def RppgPeakDetection(ppg,fs,fr=100, show=False, filter=False, range=1.0):
     """
     rPPG peak検出
     peak時間を返り値とする
     """
-    hr_f = evaluate.CalcSNR(ppg,fs=fs,nfft=512)["HR"]
-    # hr_f = 1.0
-    print(hr_f)
+    hr_f = evaluate.CalcSNR(ppg,fs=fs,nfft=1024)["HR"]
+
     if filter==True:
         # Moving Average
         ppg =  preprocessing.ButterFilter(ppg, 0.7, 2.5, fs)    
@@ -83,14 +82,17 @@ def OutlierDetect(rpeaks=None, threshold=0.25):
     # 閾値より大きく外れたデータを取得
     index_outlier = np.where(np.abs(detrend_rri) > (threshold*1000))[0]
     print("{} point detected".format(index_outlier.size))
-
+    plt.plot()
     if index_outlier.size > 0:
         # 閾値を超えれば，スプライン関数で補間
         flag = np.ones(len(rri), dtype=bool)
         flag[index_outlier.tolist()] = False
         rri_spline = interpolate.interp1d(rpeaks[flag], rri[flag], 'cubic')
-        rri_outlier = rri_spline(rpeaks[np.logical_not(flag)])
-        rri[np.logical_not(flag)] = rri_outlier
+        try:
+            rri_outlier = rri_spline(rpeaks[np.logical_not(flag)])
+            rri[np.logical_not(flag)] = rri_outlier
+        except:
+            pass
 
     return rpeaks, rri
 

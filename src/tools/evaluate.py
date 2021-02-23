@@ -7,13 +7,21 @@ import pandas as pd
 import matplotlib.pyplot as plt
 from scipy import signal,interpolate
 import pyhrv
+from . import visualize
 
 
 
-# 一定時間ごとの特徴量を算出し，dataframe型にまとめて返す
-def biosignal_time_summary(rpeaks, duration=300,overlap=150,skip_time=None,outpath=None): 
+
+def CalcHRV_Time(rpeaks,rri, duration=120,overlap=60,skip_time=None,outpath=None): 
+    '''
+    一定時間ごとの特徴量を算出し，dataframe型にまとめて返す
+    rri [ms]
+    rpeaks [ms]
+
+    '''
+    
     # 時間変数を作成
-    time_ = np.arange(duration, rpeaks.max()/1000, overlap)
+    time_ = np.arange(duration, rpeaks[-1]/1000, overlap)
     label_ = time_
     if skip_time is not None:
         time_ = time_ + skip_time
@@ -29,22 +37,23 @@ def biosignal_time_summary(rpeaks, duration=300,overlap=150,skip_time=None,outpa
         seg_rpeaks  = rpeaks[(rpeaks>=emotion[key][0]*1000) & (rpeaks<=emotion[key][1]*1000)]
         # 特徴抽出
         # bio_parameter = Calc_PSD(seg_rpeaks)
-        features = pyhrv.frequency_domain.welch_psd(nni=seg_rpeaks[1:] - seg_rpeaks[:-1],show=False,detrend=False,nfft=2**9)
+        features = pyhrv.frequency_domain.welch_psd(nni=rri[(rpeaks>=emotion[key][0]*1000) & (rpeaks<=emotion[key][1]*1000)],
+        show=False,detrend=False,nfft=2**9)
+
         # Print all the parameters keys and values individually
         bio_parameter = {"LF_ABS":features["fft_abs"][0],"HF_ABS":features["fft_abs"][1], "LFHFratio": features["fft_ratio"]}
         
         print("{}... done".format(key))
         segment_bio_report.update({'section':key})
         segment_bio_report.update(bio_parameter)
-
         if i == 0:
             df = pd.DataFrame([], columns=segment_bio_report.keys())
-
         df =  pd.concat([df, pd.DataFrame(segment_bio_report , index=[key])])
+        plt.gca().clear()
     return df
 
 
-def CalcSNR(ppg, HR_F=None, fs=30, nfft=512):
+def CalcSNR(ppg, HR_F=None, fs=30, nfft=1024):
     """
     CHROM参照
     SNRを算出する
@@ -54,40 +63,54 @@ def CalcSNR(ppg, HR_F=None, fs=30, nfft=512):
     freq, power = signal.welch(ppg, fs, nfft=nfft, detrend="constant",
                                      scaling="spectrum", window="hamming")
     # peak hr
+
+    FMask2 = (freq >= 0.5)&(freq <= 4)
+    
     if HR_F is None:
-        HR_F = freq[np.argmax(power)]
+        power_sub = power[FMask2]
+        HR_F = freq[FMask2][np.argmax(power_sub)]
+
 
     # 0.2Hz帯
     GTMask1 = (freq >= HR_F-0.1) & (freq <= HR_F+0.1)
     GTMask2 = (freq >= HR_F*2-0.2) & (freq <= HR_F*2+0.2)
     SPower = np.sum(power[GTMask1 | GTMask2])
-    FMask2 = (freq >= 0.5)&(freq <= 4)
+    
     AllPower = np.sum(power[FMask2])
     SNR = 10*np.log10((SPower)**2/(AllPower-SPower)**2)
     return {"HR":HR_F,"SNR":SNR}
 
-
-def CalcFreqHR(ppg, fs=30, nfft=512):
+def CalcFreqHR(ppg,fs,segment=10, overlap=None):
     """
     Calculate Frequency domain heart rate
     using DFT,
+    segment = 10s
     return HR[bpm]
     """
-    # FFT PSD
-    f, t, Sxx = signal.spectrogram(ppg, fs, nperseg=nfft,
-                                   noverlap=nfft/2, scaling="spectrum")
-    # Calc HR
-    HR_F = np.array([[]])
-    for i in range(len(t)):
-        Sxx_t = Sxx[:, i]
-        HR_F_t = 60*f[np.argmax(Sxx_t)]
-        HR_F = np.append(HR_F, HR_F_t)
-    return t, HR_F
+    # デフォルトは50%オーバーラップ
+    ts = np.arange(0,len(ppg)/fs,1/fs)
+    if overlap is None:
+        overlap = segment*1000/2 
+
+    starts = np.arange(0, ts[-1]-overlap, overlap)
+    HR_T = np.array([[]])
+    SNR_T = np.array([[]])
+    for start in starts:
+        end = start + segment
+        item_ppg = ppg[(ts >= start) & (ts < end)]
+        result = CalcSNR(item_ppg,fs=fs,nfft=256)
+        # visualize.plot_snr(item_ecg,fs=100)
+        # plt.show()
+        HR_T = np.append(HR_T, result["HR"])
+        SNR_T = np.append(SNR_T, result["SNR"])
+    return starts, HR_T, SNR_T
 
 
 def CalcTimeHR(rpeaks, rri, segment=17.06, overlap=None):
     """
     Time domain Heart rate
+    rpeaks [ms]
+    rri [ms]
     """
     if overlap is None:
         overlap = segment/2 
@@ -99,7 +122,7 @@ def CalcTimeHR(rpeaks, rri, segment=17.06, overlap=None):
         ave_hr = 60/np.average(item_rri)
         HR_T = np.append(HR_T, ave_hr)
     ts = starts + overlap
-    return ts, HR_T 
+    return ts, HR_T
 
 
 def CalcEvalRRI(ref_rri, est_rri):
